@@ -2,9 +2,9 @@ import React from 'react';
 import { Text, View, Image, TouchableOpacity, AsyncStorage } from 'react-native';
 import { DrawerContentScrollView, DrawerItemList, DrawerItem } from '@react-navigation/drawer';
 import { DrawerActions } from '@react-navigation/native';
-import Animated from 'react-native-reanimated';
-import MaleNoneAvatar from '../assets/images/male-none-avatar.png'
 
+import Animated from 'react-native-reanimated';
+import UserCirle from '../assets/images/user-circle.png'
 import { FontAwesome5 } from '@expo/vector-icons'; 
 import { AntDesign } from '@expo/vector-icons'; 
 import { Entypo } from '@expo/vector-icons';
@@ -21,9 +21,9 @@ import host from '../assets/host';
 
 function CustomDrawer({navigation, progress, ...props}) {
     const dispatch = useDispatch();
-
     const user = useSelector(state => state.userReducer)
-    // console.log(user);
+    const permission = React.useRef(user.data.permission);
+
     const getAttendanceScreen = {
         title: 'Điểm danh',
         status: 1,
@@ -42,7 +42,7 @@ function CustomDrawer({navigation, progress, ...props}) {
         const getPermission = await AsyncStorage.getItem('permission');
         const token = await AsyncStorage.getItem('token');
         if(getPermission === 'teacher') {
-            console.log('123123');
+            console.log('logout');
         }
         else {
             axios.post(`${host}/users/logout`, {token: token, permission: 'user'})
@@ -58,7 +58,7 @@ function CustomDrawer({navigation, progress, ...props}) {
     }
 
 
-    if(user.data.permission === 'teacher' || user.data.permission === 'supervisor') {
+    if(permission.current === 'teacher' || permission.current === 'supervisor') {
         return (    // Giao vien
             <View >
                 <View style={{ flex: 0, height: "3%",}}>
@@ -72,8 +72,13 @@ function CustomDrawer({navigation, progress, ...props}) {
                     }}>
                         <View style={{ flexDirection: 'row', flex: 1 }}>
                             <View style={{ flex: 1/4, justifyContent: 'center', alignItems: 'center' }}>
-                                <View style={{ width: 60, height: 60, backgroundColor: '#000', borderRadius: 40 }}>
-                                    <Image source={MaleNoneAvatar} style={{width: 60, height: 60}} />
+                                <View style={{ width: 60, height: 60, borderRadius: 15 }}>
+                                    {
+                                        user.data.Avatar
+                                        ? <Image source={{ uri: `${host}/${user.data.Avatar}`}} style={{width: 60, height: 60, borderRadius: 50}} />
+                                        : <Image source={ UserCirle } style={{width: 60, height: 60}} />
+                                    }
+                                    
                                 </View>
                             </View>
                             <View style={{ flex: 3/4, justifyContent: 'center', paddingLeft: 5}}>
@@ -100,6 +105,12 @@ function CustomDrawer({navigation, progress, ...props}) {
                                 label="Hồ sơ" 
                                 icon={({icon, size}) => <FontAwesome name="user" color="#057aae" size={18} />}
                                 onPress={() => navigation.navigate("Profile")}
+                            />
+
+                            <DrawerItem 
+                                label="Đổi mật khẩu" 
+                                icon={({icon, size}) => <FontAwesome5 name="lock" color="#057aae" size={18} />}
+                                onPress={() => navigation.navigate("ChangePassword")}
                             />
 
                             <DrawerItem 
@@ -146,12 +157,11 @@ function CustomDrawer({navigation, progress, ...props}) {
                 </View>
             </View>
         )
-    } else if (user.data.permission === 'parents') {    // Phu huynh
+    } else if (permission.current === 'parents') {    // Phu huynh
         return (
             <View >
-                <View style={{ flex: 0, height: "3%",}}>
-    
-                </View>
+                <View style={{ flex: 0, height: "3%",}} />
+
                 <View 
                     style={{ 
                         flex: 0,
@@ -160,8 +170,13 @@ function CustomDrawer({navigation, progress, ...props}) {
                     }}>
                         <View style={{ flexDirection: 'row', flex: 1 }}>
                             <View style={{ flex: 1/4, justifyContent: 'center', alignItems: 'center' }}>
-                                <View style={{ width: 60, height: 60, backgroundColor: '#000', borderRadius: 40 }}>
-                                    <Image source={MaleNoneAvatar} style={{width: 60, height: 60}} />
+                                <View style={{ width: 60, height: 60, borderRadius: 40 }}>
+                                {
+                                        user.data.Avatar
+                                        ? <Image source={{ uri: `${host}/${user.data.Avatar}` }} style={{width: 60, height: 60, borderRadius: 50}} />
+                                        : <Image source={ UserCirle } style={{width: 60, height: 60}} />
+                                    }
+    
                                 </View>
                             </View>
                             <View style={{ flex: 3/4, justifyContent: 'center', paddingLeft: 5}}>
@@ -184,11 +199,23 @@ function CustomDrawer({navigation, progress, ...props}) {
                     <DrawerContentScrollView {...props}>
                         <Animated.View style={{ transform: [{translateX}]}}>
                             <DrawerItem 
-                                label="Hồ sơ" 
-                                icon={({icon, size}) => <FontAwesome name="user" color="#057aae" size={18} />}
-                                onPress={() => navigation.navigate("Profile")}
+                                label="Hồ sơ cá nhân" 
+                                icon={({icon, size}) => <AntDesign name="profile" color="#057aae" size={18} />}                                onPress={() => navigation.navigate("Profile")}
+                            />
+
+    <                       DrawerItem 
+                                label="Hồ sơ GVCN" 
+                                icon={({icon, size}) => <FontAwesome name="list-alt" color="#057aae" size={18} />}
+                                onPress={() => navigation.navigate("ViewProfileTeacher")}
                             />
     
+    
+                            <DrawerItem 
+                                label="Đổi mật khẩu" 
+                                icon={({icon, size}) => <FontAwesome5 name="lock" color="#057aae" size={18} />}
+                                onPress={() => navigation.navigate("ChangePassword")}
+                            />
+
                             <DrawerItem 
                                 label="Điểm danh" 
                                 icon={({icon, size}) => <FontAwesome name="calendar" color="#057aae" size={18}/>}

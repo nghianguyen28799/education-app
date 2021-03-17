@@ -270,7 +270,7 @@ export default function ScanScreen({ navigation }) {
         <View style={{ flex: 1, alignItems: "center", justifyContent: 'center', }}>
           <BarCodeScanner
             onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
-            style={{... StyleSheet.absoluteFillObject, backgroundColor: 'blue'}}
+            style={{... StyleSheet.absoluteFillObject, backgroundColor: '#fff'}}
           />
           {/* <View style={{ flex: 1, position: 'absolute', width: width/5*3+50 , height: width/5*3+50 }}>
     

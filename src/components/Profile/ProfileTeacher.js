@@ -13,60 +13,187 @@ import {
 } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { addUser } from '../../actions/userAction';
 import axios from 'axios';
 import host from '../../assets/host';
+
 // icon store 
 import { FontAwesome5 } from '@expo/vector-icons'; 
 import { AntDesign } from '@expo/vector-icons'; 
 import { Feather } from '@expo/vector-icons';
 import UserCirle from '../../assets/images/user-circle.png'
 import { Entypo } from '@expo/vector-icons';
-
 // close icon
 
+import LottieView from 'lottie-react-native';
 import BottomSheet from 'reanimated-bottom-sheet';
 import Animated from 'react-native-reanimated';
+import * as ImagePicker from 'expo-image-picker';
+import { Alert } from 'react-native';
 
 const window = Dimensions.get("window");
 const screen = Dimensions.get("screen");
 
 const { width, height } = screen;
 
+
 const ProfileTeacherScreen = ({ navigation }) => {
-    const getGoBack = () => {
-        navigation.goBack();
-    }
+
+    const dispatch = useDispatch();
     const user = useSelector(state => state.userReducer)
 
+    const [loading, setLoading] = React.useState(false);
+    const [userData, setUserData] = React.useState();
+    const [userAvatarData, setUserAvatarData] = React.useState();
     const [classData, setClassData] = React.useState({});
-
     const [edit, setEdit] = React.useState(false)
+    const [image, setImage] = React.useState(null);
+    
+    React.useEffect(() => {
+        getData();
+    },[])
 
-    const handleChangeEdit = () => {
-        setEdit(!edit);
-    }
 
     const getData = async () => {
         try{
-            if(user.data.permission === 'parents') {
-
-            } else {
-                const isClass = await axios.post(`${host}/class/getClassById`, {id: user.data.ClassCode})
-                setClassData(isClass.data[0])
-            }
-            
+            const isClass = await axios.post(`${host}/class/getClassById`, {id: user.data.ClassCode})
+            setClassData(isClass.data[0])
+            setUserData(user.data);
+            setUserAvatarData(user.data);
+            setImage(user.data.Avatar);
         } catch(error) {
             console.log(error);
         }
     }
 
-    React.useEffect(() => {
-        getData();
-    },[])
+    const authAccessLibrary = async () => {
+        if (Platform.OS !== 'web') {
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') {
+            alert('Sorry, we need camera roll permissions to make this work!');
+          }
+        }
+    }
+
+    const getGoBack = () => {
+        navigation.goBack();
+    }
+
+    const handleChangeEdit = () => {
+        authAccessLibrary()
+        setEdit(!edit);
+    }
+
+    const onChangeTextName = (value) => {
+        setUserData({
+            ...userData,
+            FullName: value
+        })
+    }
+
+    const onChangeTextEmail = (value) => {
+        setUserData({
+            ...userData,
+            Email: value
+        })
+    }
+
+    const onChangeTextPhone = (value) => {
+        setUserData({
+            ...userData,
+            NumberPhone: value
+        })
+    }
+
+    const onChangeTextBirthDay = (value) => {
+        setUserData({
+            ...userData,
+            BirthDay: value
+        })
+    }
+
+    const onChangeTextIdent = (value) => {
+        setUserData({
+            ...userData,
+            Identification: value
+        })
+    }
+
+    const confirmChangeInfo = async () => {
+        const changeInfo = await axios.post(`${host}/teacher/changeUserInfo`, { userData })
+        const { data, error } = changeInfo.data;
+        if(!error) {
+            setLoading(true)
+            const timer = setInterval(async () => {
+                dispatch(addUser(userData))
+                navigation.replace('Profile');
+                clearInterval(timer)
+            },2000)
+ 
+        } else {
+            console.log(error);
+        }
+
+    }
 
     const bs = React.createRef()
     const fall = new Animated.Value(1);
+
+
+    const takePhotoFromCamera = () => {
+
+    }
+
+    const uploadImage = async (file) => {
+        const localUri = file;
+        const filename = localUri.split('/').pop();
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `image/${match[1]}` : `image`;
+        const formData = new FormData();
+        const dataPicture = JSON.parse(JSON.stringify({ uri: localUri, name: filename, type }));
+        const config = { headers: { 'Content-Type': 'multipart/form-data' } };
+        
+        formData.append('photo', dataPicture);
+        formData.append('_id', userData._id);
+
+        // end upload image
+
+        const changeInfo = await axios.post(`${host}/teacher/changeUserAvatar`, formData, config)
+        const { data, error } = changeInfo;
+        if(!error) {
+            setLoading(true)
+            const timer = setInterval(async () => {
+                // setUserAvatarData({
+                //     ...userAvatarData,
+                //     Avatar: data.uri
+                // })
+   
+                await dispatch(addUser({
+                    ...userAvatarData,
+                    Avatar: data.uri
+                }))
+                navigation.replace('Profile');
+                clearInterval(timer)
+            },2000)
+        } else {
+            console.log(error);
+        }
+    }
+
+    const choosePhotoFromLibrary = async () => {
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.All,
+            allowsEditing: true,
+            aspect: [4, 4],
+            quality: 1,
+          });
+      
+          if (!result.cancelled) {
+            setImage(result.uri);
+            uploadImage(result.uri)
+        }
+    }
 
     const renderInner = () => (
         <View style={styles.panel}>
@@ -75,11 +202,11 @@ const ProfileTeacherScreen = ({ navigation }) => {
                 <Text style={styles.panelSubtitle}>Chọn hình ảnh hồ sơ của bạn</Text>
             </View>
 
-            <TouchableOpacity style={styles.panelButton}>
+            <TouchableOpacity style={styles.panelButton} onPress={takePhotoFromCamera}>
                 <Text style={styles.panelButtonTitle}>Take Photo</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.panelButton}>
+            <TouchableOpacity style={styles.panelButton} onPress={choosePhotoFromLibrary}>
                 <Text style={styles.panelButtonTitle}>Choose From Library</Text>
             </TouchableOpacity>
 
@@ -150,7 +277,7 @@ const ProfileTeacherScreen = ({ navigation }) => {
                     </View>
                     
                     <TouchableOpacity
-                        onPress={handleChangeEdit}
+                        onPress={confirmChangeInfo}
                     >
                         <View style={styles.RealtimeChatHeader}>
                             <AntDesign name="check" size={22} color="#28B463" />
@@ -169,10 +296,11 @@ const ProfileTeacherScreen = ({ navigation }) => {
                             onPress={() => bs.current.snapTo(0)}
                         >                      
                             <View style={styles.contentProfile_avatar}> 
-                                {/* <View style={{ flex : 1, height: 80, width: 80, borderWidth: 1, borderRadius: 40 }}>
-                            
-                                </View> */}
-                                <Image source={UserCirle} style={{ width: 80, height: 80 }}/> 
+                                {
+                                    image
+                                    ? <Image source={{ uri: `${host}/${image}` }} style={{ width: 120, height: 120, borderRadius: 70 }}/> 
+                                    : <Image source={UserCirle} style={{ width: 80, height: 80 }}/> 
+                                }
                             </View>
                         </TouchableOpacity>
                         
@@ -180,16 +308,11 @@ const ProfileTeacherScreen = ({ navigation }) => {
                         {/* Họ tên */}
     
                         <View style={styles.contentProfile_textfield}>
-                            <Text style={styles.contentProfile_textfield_title}>Họ và tên </Text>
-                            {/* <Text style={styles.contentProfile_textfield_content}> 
-                                {
-                                    user.data.FullName
-                                    ? user.data.FullName
-                                    : null
-                                }
-                            </Text> */}
+                            <Text style={styles.contentProfile_textfield_title}>* Họ và tên </Text>
                             <TextInput 
                                 style={styles.contentProfile_textinput_content}
+                                value={userData.FullName}
+                                onChangeText={(value)=>onChangeTextName(value)}
                             />
                         </View>   
     
@@ -197,7 +320,7 @@ const ProfileTeacherScreen = ({ navigation }) => {
     
                         <View style={styles.contentProfile_textfield}>
                             <Text style={styles.contentProfile_textfield_title}>Giới tính</Text>
-                            <Text style={styles.contentProfile_textfield_content}>
+                            <Text style={[styles.contentProfile_textfield_content, {color: "#A6ACAF"} ]}>
                                 {
                                     user.data.Gender === 'Male'
                                     ? 'Nam'
@@ -211,60 +334,52 @@ const ProfileTeacherScreen = ({ navigation }) => {
                         {/* Email  */}
     
                         <View style={styles.contentProfile_textfield}>
-                            <Text style={styles.contentProfile_textfield_title}>Email</Text>
-                            <Text style={styles.contentProfile_textfield_content}> 
-                                {
-                                    user.data.Email
-                                    ? user.data.Email
-                                    : null
-                                }
-                            </Text>
+                            <Text style={styles.contentProfile_textfield_title}>* Email</Text>
+                            <TextInput 
+                                style={styles.contentProfile_textinput_content}
+                                value={userData.Email}
+                                onChangeText={(value)=>onChangeTextEmail(value)}
+                            />
                         </View>  
     
                         {/* Số điện thoại */}
     
                         <View style={styles.contentProfile_textfield}>
-                            <Text style={styles.contentProfile_textfield_title}>Số điện thoại</Text>
-                            <Text style={styles.contentProfile_textfield_content}> 
-                                {
-                                    user.data.NumberPhone
-                                    ? user.data.NumberPhone
-                                    : null
-                                }
-                            </Text>
+                            <Text style={styles.contentProfile_textfield_title}>* Số điện thoại</Text>
+                            <TextInput 
+                                style={styles.contentProfile_textinput_content}
+                                value={userData.NumberPhone}
+                                onChangeText={(value)=>onChangeTextPhone(value)}
+                            />
                         </View>  
     
                         {/* Ngày sinh */}
     
                         <View style={styles.contentProfile_textfield}>
-                            <Text style={styles.contentProfile_textfield_title}>Ngày sinh</Text>
-                            <Text style={styles.contentProfile_textfield_content}> 
-                                {
-                                    user.data.BirthDay
-                                    ? user.data.BirthDay
-                                    : null
-                                }
-                            </Text>
+                            <Text style={styles.contentProfile_textfield_title}>* Ngày sinh</Text>
+                            <TextInput 
+                                style={styles.contentProfile_textinput_content}
+                                value={userData.BirthDay}
+                                onChangeText={(value)=>onChangeTextBirthDay(value)}
+                            />
                         </View>   
     
                         {/* CMND */}
     
                         <View style={styles.contentProfile_textfield}>
-                            <Text style={styles.contentProfile_textfield_title}>CMND/CCCD </Text>
-                            <Text style={styles.contentProfile_textfield_content}> 
-                                {
-                                    user.data.Identification
-                                    ? user.data.Identification
-                                    : null
-                                }
-                            </Text>
+                            <Text style={styles.contentProfile_textfield_title}>* CMND/CCCD </Text>
+                            <TextInput 
+                                style={styles.contentProfile_textinput_content}
+                                value={userData.Identification}
+                                onChangeText={(value)=>onChangeTextIdent(value)}
+                            />
                         </View> 
     
                         {/* Ngày nhập học */}
     
                         <View style={styles.contentProfile_textfield}>
                             <Text style={styles.contentProfile_textfield_title}>Năm Làm Việc</Text>
-                            <Text style={styles.contentProfile_textfield_content}>
+                            <Text style={[styles.contentProfile_textfield_content, {color: "#A6ACAF"} ]}>
                                 {
                                     user.data.Worked
                                     ? user.data.Worked
@@ -277,7 +392,7 @@ const ProfileTeacherScreen = ({ navigation }) => {
     
                         <View style={styles.contentProfile_textfield}>
                             <Text style={styles.contentProfile_textfield_title}>Quyền </Text>
-                            <Text style={styles.contentProfile_textfield_content}> 
+                            <Text style={[styles.contentProfile_textfield_content, {color: "#A6ACAF"} ]}>
                                 Giáo viên
                             </Text>
                         </View> 
@@ -286,7 +401,7 @@ const ProfileTeacherScreen = ({ navigation }) => {
     
                         <View style={styles.contentProfile_textfield}>
                             <Text style={styles.contentProfile_textfield_title}>Chủ nhiệm lớp </Text>
-                            <Text style={styles.contentProfile_textfield_content}> {`Lớp `}
+                            <Text style={[styles.contentProfile_textfield_content, {color: "#A6ACAF"} ]}> {`Lớp `}
                                 {
                                     classData.ClassCode
                                     ? classData.ClassCode
@@ -296,6 +411,11 @@ const ProfileTeacherScreen = ({ navigation }) => {
                             </Text>
                         </View>   
                     </View>
+                    {
+                        loading
+                        ? <LottieView source={require('../../assets/json/loader.json')} autoPlay loop />
+                        : null
+                    }
                 </Animated.View>
             </View>  
         );
@@ -303,8 +423,7 @@ const ProfileTeacherScreen = ({ navigation }) => {
         return (
             <View style={styles.container}>
                 <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-                
-                <View style={styles.header}>
+                <View style={styles.header_edit}>
                     <TouchableOpacity onPress={getGoBack}>
                         <View style={styles.goBackHeader}>
                             <FontAwesome5 name="angle-left" size={30} color="#6495ED"/>
@@ -324,16 +443,18 @@ const ProfileTeacherScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>  
                     
-                <View style={styles.body}>
+                <View style={styles.body_edit}>
                     <View style={styles.contentProfile}>
     
                         {/* Avatar */}
          
                         <View style={styles.contentProfile_avatar}> 
-                            {/* <View style={{ flex : 1, height: 80, width: 80, borderWidth: 1, borderRadius: 40 }}>
-                        
-                            </View> */}
-                            <Image source={UserCirle} style={{ width: 80, height: 80 }}/> 
+                            {
+                                image
+                                ? <Image source={{ uri: `${host}/${image}` }} style={{ width: 120, height: 120, borderRadius: 70 }}/> 
+                                : <Image source={UserCirle} style={{ width: 80, height: 80 }}/> 
+                            }
+
                         </View>
                         
                         {/* Họ tên */}
@@ -448,7 +569,6 @@ const ProfileTeacherScreen = ({ navigation }) => {
                                     ? classData.ClassCode
                                     : null
                                 }
-                            
                             </Text>
                         </View>   
                     </View>
@@ -534,7 +654,7 @@ const styles = StyleSheet.create({
         flex: 2/3,  
         borderRadius: 20,
         padding: 20,
-        // shadown
+        // shadow
         // shadowColor: "blue",
         // shadowOffset: {
         //     width: 0,
@@ -546,7 +666,7 @@ const styles = StyleSheet.create({
     },
     
     contentProfile_avatar: {
-        height: 80,
+        height: 120,
         alignItems: 'center',
         justifyContent: 'center',
     },

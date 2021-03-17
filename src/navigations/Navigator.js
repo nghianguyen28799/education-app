@@ -23,6 +23,9 @@ import AttendenceScreen from '../screens/AttendenceScreen';
 import OutBusScreen from '../screens/OutBusScreen';
 import StudentListScreen from '../screens/StudentListScreen';
 import ViewProfileStudentScreen from '../screens/ViewProfileStudentScreen';
+import ViewProfileTeacherScreen from '../screens/ViewProfileTeacherScreen';
+import ChangePasswordScreen from '../screens/ChangePasswordScreen';
+import ChooseStationScreen from '../screens/ChooseStationScreen';
 // import ReasonAbsence from '../screens/ReasonAbsenceScreen';
 
 const Stack = createStackNavigator();
@@ -197,6 +200,9 @@ export default function StackNavigator () {
             <Stack.Screen name="Message" component={MessageScreen} options={ navOptionHandle } />
             <Stack.Screen name="StudentList" component={StudentListScreen} options={ navOptionHandle } />
             <Stack.Screen name="ViewProfileStudent" component={ViewProfileStudentScreen} options={ navOptionHandle } />
+            <Stack.Screen name="ViewProfileTeacher" component={ViewProfileTeacherScreen} options={ navOptionHandle } />
+            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={ navOptionHandle } />
+            <Stack.Screen name="ChooseStation" component={ChooseStationScreen} options={ navOptionHandle } />
             {/* <Stack.Screen name="ReasonAbsence" component={ReasonAbsence} options={ navOptionHandle }/> */}
         </Stack.Navigator>
     </NavigationContainer>

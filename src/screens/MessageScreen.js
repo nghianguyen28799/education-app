@@ -21,179 +21,356 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { FontAwesome } from '@expo/vector-icons';
 // close icon store
+import axios from 'axios';
+import host from '../assets/host';
+import io from 'socket.io-client';
+import { useSelector } from 'react-redux';
 
 import UserCirle from '../assets/images/user-circle.png'
 
-const MessageScreen = ({navigation}) => {
-    // return (
-    //     <View style={styles.container}>
-    //         <View style={styles.header}>
-    //         <StatusBar backgroundColor="#00a6b5c9" barStyle="light-content" />
-    //         <TouchableOpacity
-    //           onPress={() => navigation.goBack()}
-    //         >
-    //             <View style={styles.goBackHeader}>
-    //               <FontAwesome5 name="angle-left" size={30} color="#fff"/>
-    //             </View>
-    //         </TouchableOpacity>
-            
-    //         <View style={styles.titleHeader}>
-    //             <Text style={styles.titleHeader_text}>Thanh Phúc</Text>
-    //             <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center'}}>
-    //                 <Text style={{ color: '#fff', fontSize: 13 }}>Phụ huynh của: </Text>
-    //                 <Text style={{ fontWeight: 'bold', color: '#21618C' }}>Hữu Đan</Text>
-    //             </View>
-                
-    //             <Text style={{ color: 'green' }}>Online</Text>
-    //         </View>
-            
-    //         <TouchableOpacity
-    //           onPress={() => setSearch(true)}
-    //         >
-    //             <View style={styles.SearchHeader}>
-    //               <AntDesign name="search1" size={22} color="#6495ED" />
-    //                 {/* <AntDesign name="message1" size={22} color="#6495ED" /> */}
-    //             </View>
-    //         </TouchableOpacity>
-    //         </View> 
+let socket;
 
-    //         <View style={ styles.body }>
-    //             <ScrollView>
-    //                 <View style={styles.myMessage}>
-                        
-    //                 </View>
+const MessageScreen = ({ navigation, route }) => {
 
-    //                 <View style={styles.otherMessage}>
+    const user = useSelector(state => state.userReducer)
 
-    //                 </View>
-    //             </ScrollView>
-    //         </View>
-
-    //         <View style={ styles.footer }>
-    //             <View style={ styles.textMessage }>
-    //                 <TextInput 
-    //                     placeholder="Nhập tin nhắn ..."
-    
-    //                 />
-    //             </View>
-    //             <TouchableOpacity>
-    //                 <View style={ styles.buttonMessage }>
-    //                     <MaterialCommunityIcons name="send" size={24} color="black" />
-    //                 </View>
-    //             </TouchableOpacity>
-    //         </View>
-    //     </View>
-    // )
-
+    const [name, setName] = React.useState('');
+    const [room, setRoom] = React.useState('');
     const [messages, setMessages] = React.useState([]);
 
-    React.useEffect(() => {
-        setMessages([
-        {
-            _id: 1,
-            text: 'Hello developer',
-            createdAt: new Date(),
-            user: {
-            _id: 2,
-            name: 'React Native',
-            avatar: 'https://placeimg.com/140/140/any',
-            },
-        },
-        ])
-    }, [])
-
-    const onSend = React.useCallback((messages = []) => {
-        setMessages(previousMessages => GiftedChat.append(previousMessages, messages))
-        console.log(messages);
-    }, [])
-
-    const renderSend = (props) => {
-        return (
-          <Send {...props}>
-            <View>
-              <MaterialCommunityIcons
-                name="send-circle"
-                style={{marginBottom: 5, marginRight: 5}}
-                size={32}
-                color="#2e64e5"
-              />
-            </View>
-          </Send>
-        );
-      };
+    if(user.data.permission === "parents") {
+        const [studentData, setStudentData] = React.useState();
+        const [teacherData, setTeacherData] = React.useState([]);
+        const [parentsData, setParentsData] = React.useState();
     
-      const renderBubble = (props) => {
-        return (
-          <Bubble
-            {...props}
-            wrapperStyle={{
-              right: {
-                backgroundColor: '#00a6b5c9',
-              },
-            }}
-            textStyle={{
-              right: {
-                color: '#fff',
-              },
-            }}
-          />
-        );
-      };
+        React.useEffect(() => {
+            getData();
+        }, [])
     
-      const scrollToBottomComponent = () => {
-        return(
-          <FontAwesome name='angle-double-down' size={22} color='#333' />
-        );
-      }
-
-  return (
-    <View style={styles.container}>
-        <View style={styles.header}>
-        <StatusBar backgroundColor="#00a6b5c9" barStyle="light-content" />
-        <TouchableOpacity
-            onPress={() => navigation.goBack()}
-        >
-            <View style={styles.goBackHeader}>
-                <FontAwesome5 name="angle-left" size={30} color="#fff"/>
-            </View>
-        </TouchableOpacity>
-        
-        <View style={styles.titleHeader}>
-            <Text style={styles.titleHeader_text}>Thanh Phúc</Text>
-            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center'}}>
-                <Text style={{ color: '#fff', fontSize: 13 }}>Phụ huynh của: </Text>
-                <Text style={{ fontWeight: 'bold', color: '#21618C' }}>Hữu Đan</Text>
-            </View>
+        const getData = async () => {
+          try{
+            socket = io(host);
+          
+            const isStudent = await axios.post(`${host}/student/getStudentByParentsId`, {id: user.data._id})
+            const isTeacher = await axios.post(`${host}/teacher/getUserById`, {id: isStudent.data.teacherCode})
+            const isClass = await axios.post(`${host}/class/getClassById`, {id: isStudent.data.classCode})
             
-            <Text style={{ color: 'green' }}>Online</Text>
-        </View>
-        
-        <TouchableOpacity
-            onPress={() => setSearch(true)}
-        >
-            <View style={styles.SearchHeader}>
-                <AntDesign name="search1" size={22} color="#6495ED" />
-                {/* <AntDesign name="message1" size={22} color="#6495ED" /> */}
-            </View>
-        </TouchableOpacity>
-        </View>
+            setTeacherData(isTeacher.data)  
+  
+            const name = user.data.FullName;
+            const room = isTeacher.data._id+'_'+user.data._id;
+            
+            axios.post(`${host}/chat/checkroom`, {room} )
 
-        <View style={styles.body}>
-            <GiftedChat
-                messages={messages}
-                onSend={messages => onSend(messages)}
-                user={{
-                    _id: 1,
+            const getMessages = await  axios.post(`${host}/chat/showMessages`, {room} )
+            
+            setMessages(getMessages.data[0].messages)
+
+            setName(name);
+            setRoom(room);
+  
+            socket.emit('join', { name, room }, () => {
+                console.log('joined');
+            });
+  
+            return () => {
+              socket.emit('disconnect');
+              socket.off();
+            }
+          } catch(error) {
+            console.log(error);
+          }
+        }
+    
+        React.useEffect(() => {
+          socket.on('message', (message) => {
+            if(message.data[0].user._id !== user.data._id) {
+              const mess = message.data[0]
+              setMessages(previousMessages => GiftedChat.append(previousMessages, mess))
+            }
+          })
+        }, []);
+    
+        const onSend = React.useCallback((messages = {}) => {
+            setMessages(previousMessages => GiftedChat.append(previousMessages, messages))
+            socket.emit('sendMessage', messages);
+        }, [])
+    
+        const renderSend = (props) => {
+            return (
+              <Send {...props}>
+                <View>
+                  <MaterialCommunityIcons
+                    name="send-circle"
+                    style={{marginBottom: 5, marginRight: 5}}
+                    size={32}
+                    color="#2e64e5"
+                  />
+                </View>
+              </Send>
+            );
+          };
+        
+          const renderBubble = (props) => {
+            return (
+              <Bubble
+                {...props}
+                wrapperStyle={{
+                  right: {
+                    backgroundColor: '#00a6b5c9',
+                  },
                 }}
-                renderBubble={renderBubble}
-                alwaysShowSend
-                renderSend={renderSend}
-                scrollToBottom
-                scrollToBottomComponent={scrollToBottomComponent}
-            />
+                textStyle={{
+                  right: {
+                    color: '#fff',
+                  },
+                }}
+              />
+            );
+          };
+        
+          const scrollToBottomComponent = () => {
+            return(
+              <FontAwesome name='angle-double-down' size={22} color='#333' />
+            );
+          }
+          const TitleHeader = () => {
+              return (
+                <View style={styles.titleHeader}>
+                  <Text style={styles.titleHeader_text}>
+                      { teacherData.Gender === "Male" ? "(Thầy)" : "Cô" } {teacherData.FullName}
+                  </Text>
+                  <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center'}}>
+                      {/* <Text style={{ color: '#fff', fontSize: 13 }}>Phụ huynh của: </Text> */}
+                      <Text style={{ fontWeight: 'bold', color: 'yellow' }}>GVCN</Text>
+                  </View>
+              </View>
+              )
+          }
+    
+      return (
+        <View style={styles.container}>
+            <View style={styles.header}>
+            <StatusBar backgroundColor="#00a6b5c9" barStyle="light-content" />
+            <TouchableOpacity
+                onPress={() => navigation.goBack()}
+            >
+                <View style={styles.goBackHeader}>
+                    <FontAwesome5 name="angle-left" size={30} color="#fff"/>
+                </View>
+            </TouchableOpacity>
+            
+            <TitleHeader />
+            
+            <TouchableOpacity
+                onPress={() => setSearch(true)}
+            >
+                <View style={styles.SearchHeader}>
+                    <AntDesign name="search1" size={22} color="#6495ED" />
+                    {/* <AntDesign name="message1" size={22} color="#6495ED" /> */}
+                </View>
+            </TouchableOpacity>
+            </View>
+    
+      
+            <View style={styles.body}>
+                <GiftedChat
+                    messages={messages}
+                    onSend={messages => onSend(messages)}
+                    user={{
+                        _id: user.data._id,
+                        name: 'Teacher',
+                        avatar: `${host}/${user.data.Avatar}`
+                    }}
+                    renderBubble={renderBubble}
+                    alwaysShowSend
+                    renderSend={renderSend}
+                    scrollToBottom
+                    scrollToBottomComponent={scrollToBottomComponent}
+                />
+            </View>
         </View>
-    </View>
-  )
+      )
+    } 
+    
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    
+    
+    
+    else if(user.data.permission === "teacher") {
+        // const [studentData, setStudentData] = React.useState();
+        // const [teacherData, setTeacherData] = React.useState([]);
+        // const [parentsData, setParentsData] = React.useState();
+        const { studentData, parentsData, teacherData } = route.params
+        
+        // console.log(studentData);
+
+        React.useEffect(() => {
+            getData();
+        }, [])
+
+        const getData = async () => {
+          try{
+            socket = io(host);
+        
+            const name = user.data.FullName;
+            const room = user.data._id+'_'+parentsData._id;
+
+            axios.post(`${host}/chat/checkroom`, {room} )
+
+            const getMessages = await  axios.post(`${host}/chat/showMessages`, {room} )
+            
+            setMessages(getMessages.data[0].messages)
+            
+            setName(name);
+            setRoom(room);
+
+            socket.emit('join', { name, room }, () => {
+                console.log('joined');
+            });
+
+            return () => {
+              socket.emit('disconnect');
+              socket.off();
+            }
+            
+          } catch(error) {
+            console.log(error);
+          }
+        }
+
+        React.useEffect(() => {
+          socket.on('message', (message) => {
+            if(message.data[0].user._id !== user.data._id) {
+              const mess = message.data[0]
+              setMessages(previousMessages => GiftedChat.append(previousMessages, mess))
+            }
+          })
+        }, []);
+
+        const onSend = React.useCallback((messages = {}) => {
+            setMessages(previousMessages => GiftedChat.append(previousMessages, messages))
+            socket.emit('sendMessage', messages);
+        }, [])
+
+        const renderSend = (props) => {
+            return (
+              <Send {...props}>
+                <View>
+                  <MaterialCommunityIcons
+                    name="send-circle"
+                    style={{marginBottom: 5, marginRight: 5}}
+                    size={32}
+                    color="#2e64e5"
+                  />
+                </View>
+              </Send>
+            );
+          };
+        
+          const renderBubble = (props) => {
+            return (
+              <Bubble
+                {...props}
+                wrapperStyle={{
+                  right: {
+                    backgroundColor: '#00a6b5c9',
+                  },
+                }}
+                textStyle={{
+                  right: {
+                    color: '#fff',
+                  },
+                }}
+              />
+            );
+          };
+        
+          const scrollToBottomComponent = () => {
+            return(
+              <FontAwesome name='angle-double-down' size={22} color='#333' />
+            );
+          }
+          const TitleHeader = () => {
+              return (
+                <View style={styles.titleHeader}>
+                  <Text style={styles.titleHeader_text}>
+                      {parentsData.myFullName}
+                  </Text>
+                  <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center'}}>
+                      <Text style={{ color: '#21618C', fontSize: 13 }}>Phụ huynh của: </Text>
+                      <Text style={{ fontWeight: 'bold', color: '#fff' }}>{studentData.name}</Text>
+                  </View>
+              </View>
+              )
+          }
+
+      return (
+        <View style={styles.container}>
+            <View style={styles.header}>
+            <StatusBar backgroundColor="#00a6b5c9" barStyle="light-content" />
+            <TouchableOpacity
+                onPress={() => navigation.goBack()}
+            >
+                <View style={styles.goBackHeader}>
+                    <FontAwesome5 name="angle-left" size={30} color="#fff"/>
+                </View>
+            </TouchableOpacity>
+            
+            <TitleHeader />
+            
+            <TouchableOpacity
+                onPress={() => setSearch(true)}
+            >
+                <View style={styles.SearchHeader}>
+                    <AntDesign name="search1" size={22} color="#6495ED" />
+                    {/* <AntDesign name="message1" size={22} color="#6495ED" /> */}
+                </View>
+            </TouchableOpacity>
+            </View>
+
+      
+            <View style={styles.body}>
+                <GiftedChat
+                    messages={messages}
+                    onSend={messages => onSend(messages)}
+                    user={{
+                        _id: user.data._id,
+                        name: 'Parents',
+                        avatar: `${host}/${teacherData.Avatar}`
+                    }}
+                    renderBubble={renderBubble}
+                    alwaysShowSend
+                    renderSend={renderSend}
+                    scrollToBottom
+                    scrollToBottomComponent={scrollToBottomComponent}
+                />
+            </View>
+        </View>
+      )
+    }
+    
 }
 export default MessageScreen
 
@@ -228,7 +405,7 @@ const styles = StyleSheet.create({
     titleHeader_text: {
         fontSize: 15,
         fontWeight: 'bold',
-        color: '#21618C',
+        color: '#fff',
         paddingLeft: 15,    
     },
 

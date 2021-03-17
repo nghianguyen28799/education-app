@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     StyleSheet,
     View,
@@ -9,6 +9,7 @@ import {
     ScrollView,
     SafeAreaView,
     TextInput,
+    FlatList,
 } from 'react-native'
 
 // icon store
@@ -19,11 +20,102 @@ import { Feather } from '@expo/vector-icons';
 import { MaterialIcons } from '@expo/vector-icons'; 
 // close icon store
 
+import axios from 'axios';
+import host from '../assets/host';
+import {useSelector} from 'react-redux';
 import UserCirle from '../assets/images/user-circle.png'
 
 const MessageListScreen = ({navigation}) => {
+
+    const user = useSelector(state => state.userReducer)
+
+
     const [isSearch, setSearch] = React.useState(false);
 
+    // const [userList, setUserList] = React.useState([]);
+    
+    const [listData, setListData] = React.useState([]);
+
+    const getData = async () => {
+      const id = user.data._id;
+      axios.post(`${host}/chat/showUserList`, { id })
+      .then(resChat => {
+        // setListData(resChat.data);
+        resChat.data.map((data, i) => {
+          const parentsID = data.room.slice(data.room.indexOf("_")+1 ,data.room.length)
+          
+          axios.post(`${host}/users/getUserById`, {id: parentsID })
+          .then(resParents => {
+            
+            axios.post(`${host}/student/getStudentByParentsId`, {id: resParents.data[0]._id })
+            .then(resStudent => {
+              const index = data.messages.length
+              setListData(listData =>
+                 [...listData, {
+                  chatData: data.messages[index-1],
+                  parentsData: resParents.data[0],
+                  studentData:resStudent.data.name
+                }])
+            })
+          })
+        })
+      })
+    }
+
+    React.useEffect(() => {
+      getData()
+    }, [])
+
+
+    const Item = ({ data }) => {
+
+      return (
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Message', {
+            studentData: { name: data.studentData },
+            parentsData: data.parentsData,
+            teacherData: user.data
+          })}
+        >
+          <View style={styles.each_message_space}>
+            <View style={styles.each_message_space_on_row}>
+              <Image source={!data.parentsData.avatar ? UserCirle : { uri: `${host}/${data.parentsData.avatar}`} } style={{ width: 80, height: 80, borderRadius: 50 }} />
+              <View style={styles.each_message_content}>
+                <View style={styles.each_message_content_info}>
+                  <Text style={{
+                      fontWeight: 'bold',
+                      fontSize: 16
+                  }}> { data.parentsData.myFullName } </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <MaterialIcons name="family-restroom" size={20} color="#21b8ec" />
+                      <Text style={{ color: '#787978', fontSize: 13, marginLeft: 5 }}>{ data.studentData }</Text>
+                  </View>
+                  {
+                    data.chatData
+                    ?
+                      <View style={{ flexDirection: 'row', alignItems: 'center', overflow: 'hidden' }}>
+                        <Text style={{ fontWeight: 'bold' }}>{ data.chatData.user.name === "Parents" ? "Bạn" : "Phụ huynh"} </Text>
+                        <Text style={{ height: 20 }}> {data.chatData.text} </Text>
+                    </View>
+                    : <></>
+                  }
+                  
+                </View>
+                {/* <View style={styles.each_message_content_getdate}>
+                    <Text style={styles.each_message_content_getdate_text}>26/02/2021</Text>
+                </View> */}
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
+      )
+    };
+    
+    const renderItem = ({ item }) => (
+      <Item data={item} />
+    );
+
+    console.log(listData);
     const HeaderComponent = () => {
       if(!isSearch){
         return (
@@ -86,233 +178,21 @@ const MessageListScreen = ({navigation}) => {
           <HeaderComponent />
           <View style={styles.body}>
               <View style={styles.messages_list}>
-                <ScrollView>
-                  <TouchableOpacity
-                    onPress={() => navigation.navigate('Message')}
-                  >
-                    <View style={styles.each_message_space}>
-                      <View style={styles.each_message_space_on_row}>
-                        <Image source={UserCirle} style={{ width: 80, height: 80 }} />
-                        <View style={styles.each_message_content}>
-                          <View style={styles.each_message_content_info}>
-                            <Text style={{
-                                fontWeight: 'bold',
-                                fontSize: 16
-                            }}>Nguyễn Văn C</Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <MaterialIcons name="family-restroom" size={20} color="#21b8ec" />
-                                <Text style={{ color: '#787978', fontSize: 13, marginLeft: 5 }}>Phụ huynh</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <Text style={{ fontWeight: 'bold' }}>Bạn: </Text>
-                                <Text>Hello World  </Text>
-                            </View>
-                            
-                          </View>
-                          <View style={styles.each_message_content_getdate}>
-                              <Text style={styles.each_message_content_getdate_text}>26/02/2021</Text>
-                          </View>
-                        </View>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity>
-                    <View style={styles.each_message_space}>
-                      <View style={styles.each_message_space_on_row}>
-                        <Image source={UserCirle} style={{ width: 80, height: 80 }} />
-                        <View style={styles.each_message_content}>
-                          <View style={styles.each_message_content_info}>
-                            <Text style={{
-                                fontWeight: 'bold',
-                                fontSize: 16
-                            }}>Nguyễn Văn C</Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <MaterialIcons name="family-restroom" size={20} color="#21b8ec" />
-                                <Text style={{ color: '#787978', fontSize: 13, marginLeft: 5 }}>Phụ huynh</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <Text style={{ fontWeight: 'bold' }}>Bạn: </Text>
-                                <Text>Hello World</Text>
-                            </View>
-                            
-                          </View>
-                          <View style={styles.each_message_content_getdate}>
-                              <Text style={styles.each_message_content_getdate_text}>26/02/2021</Text>
-                          </View>
-                        </View>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity>
-                    <View style={styles.each_message_space}>
-                      <View style={styles.each_message_space_on_row}>
-                        <Image source={UserCirle} style={{ width: 80, height: 80 }} />
-                        <View style={styles.each_message_content}>
-                          <View style={styles.each_message_content_info}>
-                            <Text style={{
-                                fontWeight: 'bold',
-                                fontSize: 16
-                            }}>Nguyễn Văn C</Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <MaterialIcons name="family-restroom" size={20} color="#21b8ec" />
-                                <Text style={{ color: '#787978', fontSize: 13, marginLeft: 5 }}>Phụ huynh</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', overflow: 'hidden' }}>
-                                <Text style={{ fontWeight: 'bold' }}>Bạn: </Text>
-                                <Text>Hello World  </Text>
-                            </View>
-                            
-                          </View>
-                          <View style={styles.each_message_content_getdate}>
-                              <Text style={styles.each_message_content_getdate_text}>26/02/2021</Text>
-                          </View>
-                        </View>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity>
-                    <View style={styles.each_message_space}>
-                      <View style={styles.each_message_space_on_row}>
-                        <Image source={UserCirle} style={{ width: 80, height: 80 }} />
-                        <View style={styles.each_message_content}>
-                          <View style={styles.each_message_content_info}>
-                            <Text style={{
-                                fontWeight: 'bold',
-                                fontSize: 16
-                            }}>Nguyễn Văn C</Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <MaterialIcons name="family-restroom" size={20} color="#21b8ec" />
-                                <Text style={{ color: '#787978', fontSize: 13, marginLeft: 5 }}>Phụ huynh</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <Text style={{ fontWeight: 'bold' }}>Bạn: </Text>
-                                <Text>Hello World  </Text>
-                            </View>
-                            
-                          </View>
-                          <View style={styles.each_message_content_getdate}>
-                              <Text style={styles.each_message_content_getdate_text}>26/02/2021</Text>
-                          </View>
-                        </View>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity>
-                    <View style={styles.each_message_space}>
-                      <View style={styles.each_message_space_on_row}>
-                        <Image source={UserCirle} style={{ width: 80, height: 80 }} />
-                        <View style={styles.each_message_content}>
-                          <View style={styles.each_message_content_info}>
-                            <Text style={{
-                                fontWeight: 'bold',
-                                fontSize: 16
-                            }}>Nguyễn Văn C</Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <MaterialIcons name="family-restroom" size={20} color="#21b8ec" />
-                                <Text style={{ color: '#787978', fontSize: 13, marginLeft: 5 }}>Phụ huynh</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <Text style={{ fontWeight: 'bold' }}>Bạn: </Text>
-                                <Text>Hello World  </Text>
-                            </View>
-                            
-                          </View>
-                          <View style={styles.each_message_content_getdate}>
-                              <Text style={styles.each_message_content_getdate_text}>26/02/2021</Text>
-                          </View>
-                        </View>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity>
-                    <View style={styles.each_message_space}>
-                      <View style={styles.each_message_space_on_row}>
-                        <Image source={UserCirle} style={{ width: 80, height: 80 }} />
-                        <View style={styles.each_message_content}>
-                          <View style={styles.each_message_content_info}>
-                            <Text style={{
-                                fontWeight: 'bold',
-                                fontSize: 16
-                            }}>Nguyễn Văn C</Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <MaterialIcons name="family-restroom" size={20} color="#21b8ec" />
-                                <Text style={{ color: '#787978', fontSize: 13, marginLeft: 5 }}>Phụ huynh</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <Text style={{ fontWeight: 'bold' }}>Bạn: </Text>
-                                <Text>Hello World</Text>
-                            </View>
-                            
-                          </View>
-                          <View style={styles.each_message_content_getdate}>
-                              <Text style={styles.each_message_content_getdate_text}>26/02/2021</Text>
-                          </View>
-                        </View>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity>
-                    <View style={styles.each_message_space}>
-                      <View style={styles.each_message_space_on_row}>
-                        <Image source={UserCirle} style={{ width: 80, height: 80 }} />
-                        <View style={styles.each_message_content}>
-                          <View style={styles.each_message_content_info}>
-                            <Text style={{
-                                fontWeight: 'bold',
-                                fontSize: 16
-                            }}>Nguyễn Văn C</Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <MaterialIcons name="family-restroom" size={20} color="#21b8ec" />
-                                <Text style={{ color: '#787978', fontSize: 13, marginLeft: 5 }}>Phụ huynh</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <Text style={{ fontWeight: 'bold' }}>Bạn: </Text>
-                                <Text>Hello World  </Text>
-                            </View>
-                            
-                          </View>
-                          <View style={styles.each_message_content_getdate}>
-                              <Text style={styles.each_message_content_getdate_text}>26/02/2021</Text>
-                          </View>
-                        </View>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity>
-                    <View style={styles.each_message_space}>
-                      <View style={styles.each_message_space_on_row}>
-                        <Image source={UserCirle} style={{ width: 80, height: 80 }} />
-                        <View style={styles.each_message_content}>
-                          <View style={styles.each_message_content_info}>
-                            <Text style={{
-                                fontWeight: 'bold',
-                                fontSize: 16
-                            }}>Nguyễn Văn C</Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <MaterialIcons name="family-restroom" size={20} color="#21b8ec" />
-                                <Text style={{ color: '#787978', fontSize: 13, marginLeft: 5 }}>Phụ huynh</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <Text style={{ fontWeight: 'bold' }}>Bạn: </Text>
-                                <Text>Hello World  </Text>
-                            </View>
-                            
-                          </View>
-                          <View style={styles.each_message_content_getdate}>
-                              <Text style={styles.each_message_content_getdate_text}>26/02/2021</Text>
-                          </View>
-                        </View>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                </ScrollView>
+                {/* <FlatList
+                  data={listData}
+                  renderItem={renderItem}
+                  keyExtractor={item => item._id}
+                /> */}
+              {
+                listData !== [{}]
+                ?
+                <FlatList
+                data={listData}
+                renderItem={renderItem}
+                keyExtractor={item => item.parentsData._id}
+                />
+                : <></>
+              }
               </View>
           </View>
       </View>
@@ -379,6 +259,7 @@ const styles = StyleSheet.create({
     
     each_message_space: {
       flex: 1,
+      marginRight: 15,
     },
 
     each_message_space_on_row: {
@@ -397,7 +278,7 @@ const styles = StyleSheet.create({
     },
 
     each_message_content_info: {
-      flex: 2/3
+      flex: 1,
     },
 
     each_message_content_getdate: {

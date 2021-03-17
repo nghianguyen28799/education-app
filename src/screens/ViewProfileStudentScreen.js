@@ -19,6 +19,8 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { AntDesign } from '@expo/vector-icons'; 
 
 import UserCirle from '../assets/images/user-circle.png'
+import MaleNoneAvatar from '../assets/images/male-none-avatar.png' 
+import FemaleNoneAvatar from '../assets/images/female-none-avatar.png' 
 // close icon
 const ViewProfileStudentScreen = ({ navigation, route }) => {
     const getGoBack = () => {
@@ -75,7 +77,16 @@ const ViewProfileStudentScreen = ({ navigation, route }) => {
                 <View style={styles.body}>
                     <View style={styles.contentProfile}>
                         <View style={styles.contentProfile_avatar}>
-                            <Image source={UserCirle} style={{ width: 80, height: 80 }}/> 
+                            {
+                                studentData.avatar 
+                                ? <Image source={{ uri: `${host}/${studentData.avatar}`}} style={{ width: 120, height: 120, borderRadius: 70 }}/> 
+                                : studentData.gender === "Male"
+                                ? <Image source={MaleNoneAvatar} style={{ width: 120, height: 120 }}/> 
+                                : studentData.gender === "Female"
+                                ? <Image source={FemaleNoneAvatar} style={{ width: 120, height: 120 }}/> 
+                                : null
+                            }
+                            
                         </View>
                         
                         {/* Họ tên */}
@@ -170,7 +181,14 @@ const ViewProfileStudentScreen = ({ navigation, route }) => {
                     <View style={{ flex: 1, borderWidth: 1, borderColor: '#D5DBDB', marginVertical: 15}}></View> 
 
                     <View style={{ flex: 1, height: 50, marginBottom: 15 }}>
-                        <TouchableOpacity style={{ flexDirection: 'row', flex: 1 }}>
+                        <TouchableOpacity 
+                            onPress={() => navigation.navigate('Message', {
+                                studentData: studentData,
+                                parentsData: parentsData,
+                                teacherData: teacherData
+                            })}
+                            style={{ flexDirection: 'row', flex: 1 }}
+                        >
                             <LinearGradient
                                 start={{ x: 0, y: 1 }}
                                 end={{ x: 0.5, y: 3 }}
@@ -218,7 +236,12 @@ const ViewProfileStudentScreen = ({ navigation, route }) => {
                                 flexDirection: 'row',
                                 // borderWidth: 1,
                             }}>
-                                <Image source={UserCirle} style={{ width: 80, height: 80}}/> 
+                                {
+                                    parentsData.avatar
+                                    ? <Image source={{ uri: `${host}/${parentsData.avatar}`}} style={{ width: 80, height: 80, borderRadius: 15}}/>
+                                    : <Image source={UserCirle} style={{ width: 80, height: 80}}/>
+                                }
+                                 
                                 <View style={{ flex: 1, flexDirection: 'column' }}>
                                     <View style={{ flexDirection: 'row', flex: 1, alignItems: 'center', marginLeft: 15 }}>
                                         <Text style={{ 
@@ -405,7 +428,7 @@ const styles = StyleSheet.create({
     },
     
     contentProfile_avatar: {
-        height: 80,
+        height: 120,
         alignItems: 'center',
         justifyContent: 'center',
     },

@@ -66,7 +66,7 @@ const ListStudentScreen = ({ navigation }) => {
                     <View style={styles.student_avatar}>
                         {
                             item.avatar
-                            ? none
+                            ? <Image source={{ uri: `${host}/${item.avatar}` }} style={styles.student_avatar_image} />
                             : item.gender === 'Male'
                             ? <Image source={MaleNoneAvatar} style={styles.student_avatar_image} />
                             : item.gender === 'Female'
@@ -260,5 +260,6 @@ const styles = StyleSheet.create({
     student_avatar_image: {
         flex: 1,
         width: ((width-60)/3)-15,
+        borderRadius: 50,
     }
 })

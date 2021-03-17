@@ -56,7 +56,7 @@ export default function LoaderScreen({ navigation }) {
   const timer = setInterval(() => {
     handleChangePage()
     clearInterval(timer) 
-  }, 5000);
+  }, 1000);
   
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>

@@ -1,4 +1,4 @@
-const host = "http://192.168.3.125:5000";
+const host = "http://10.233.3.62:5000";
 
 export default host
 

@@ -1,7 +1,10 @@
 import React, { Component, useEffect, useState, useRef } from 'react';
 import { StyleSheet, Text, View, TextInput, ImageBackground, Alert, TouchableOpacity, AsyncStorage, Image, CheckBox  } from 'react-native';
-// import { TextInput } from 'react-native-paper';
+
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
+import * as Permissions from 'expo-permissions'
+
 import { FontAwesome } from '@expo/vector-icons';
 import { Feather } from '@expo/vector-icons'; 
 import { Entypo } from '@expo/vector-icons';
@@ -16,26 +19,48 @@ import ImageBackgroundLogin from "../assets/images/background-login.jpg"
 import { useDispatch } from 'react-redux';
 import { addUser } from '../actions/userAction';
 
-// Notifications.setNotificationHandler({
-//     handleNotification: async () => ({
-//         shouldShowAlert: true,
-//         shouldPlaySound: false,
-//         shouldSetBadge: false,
-//     }),
-// });
+Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }),
+});
+
+
+
+
 
 
 const Login = ({ navigation, route }) => {
 
     const dispatch = useDispatch();
     
+    // start notification 
+
+    const [expoPushToken, setExpoPushToken] = useState('');
+    const [notification, setNotification] = useState(false);
+    const notificationListener = useRef();
+    const responseListener = useRef();
+
+    React.useEffect(() => {
+        registerForPushNotificationsAsync().then((token) => {
+        setExpoPushToken(token);
+    //   console.log(token);
+
+    });
+    
+        // (async () => {
+        //   const token_vale = await AsyncStorage.getItem('token');
+        
+        // })();
+      }, []);
+
+    // end notification
+
     const [loading, setLoading] = React.useState(false);
 
     const { valueUserName, valueSelector } = route.params;
-
-    // const valueUserName = 'teacher1';
-    // const valueSelector = 'true'
-   
     const [isSelected, setSelection] = useState(valueSelector);
 
     const [data, setData] = React.useState({
@@ -45,12 +70,6 @@ const Login = ({ navigation, route }) => {
         secureTextEntry: true,
     })
 
-    // console.log(data);
-  
-    // const [expoPushToken, setExpoPushToken] = useState('');
-    // const [notification, setNotification] = useState(false);
-    // const notificationListener = useRef();
-    // const responseListener = useRef();
 
     const TextInputChange = (val) => {
         if( val.length === 0 ) {
@@ -106,6 +125,7 @@ const Login = ({ navigation, route }) => {
                 }, 2000);
             } else {
                 const timer = setInterval( async () => { // handle login User
+                   
                     const user = await axios.post(`${host}/users/getUserFromToken`, { token, permission: 'user' })
                     dispatch(addUser(user.data))
                     navigation.replace('Home')
@@ -121,16 +141,19 @@ const Login = ({ navigation, route }) => {
     const validLogin = async () => {
         const user = {
             userName: data.userName,
-            password: data.password
+            password: data.password,
+            tokenDevices: expoPushToken
         }
-        await axios.post(`${host}/teacher/login`, user)
+   
+        await axios.post(`${host}/teacher/login`, user )
         .then(resTeacher => {
             const { token, error } = resTeacher.data
             if(error) {
-                axios.post(`${host}/users/login`, user)
+                axios.post(`${host}/users/login`, user )
                 .then(resUser => {
                     const { token, error } = resUser.data
                     if(error) {
+                        console.log(expoPushToken);
                     Alert.alert("Tên đăng nhập hoặc mật khẩu không đúng!")
                     setData({
                         ...data,
@@ -275,7 +298,40 @@ const Login = ({ navigation, route }) => {
         </View>
     )
 }
+
 export default Login
+  async function registerForPushNotificationsAsync() {
+    let token;
+    if (Constants.isDevice) {
+      const { status: existingStatus } = await Permissions.getAsync(Permissions.NOTIFICATIONS);
+      let finalStatus = existingStatus;
+      if (existingStatus !== 'granted') {
+        const { status } = await Permissions.askAsync(Permissions.NOTIFICATIONS);
+        finalStatus = status;
+      }
+      if (finalStatus !== 'granted') {
+        alert('Failed to get push token for push notification!');
+        return;
+      }
+      token = (await Notifications.getExpoPushTokenAsync()).data;
+    //   console.log(token);
+    } else {
+      alert('Must use physical device for Push Notifications');
+    }
+  
+    if (Platform.OS === 'android') {
+      Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF231F7C',
+      });
+    }
+  
+    return token;
+  }
+
+
 
 const styles = StyleSheet.create({
     container: {
