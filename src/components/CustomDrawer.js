@@ -23,7 +23,7 @@ function CustomDrawer({navigation, progress, ...props}) {
     const dispatch = useDispatch();
     const user = useSelector(state => state.userReducer)
     const permission = React.useRef(user.data.permission);
-
+    
     const getAttendanceScreen = {
         title: 'Điểm danh',
         status: 1,
@@ -216,7 +216,7 @@ function CustomDrawer({navigation, progress, ...props}) {
                                 onPress={() => navigation.navigate("ChangePassword")}
                             />
 
-                            <DrawerItem 
+                            {/* <DrawerItem 
                                 label="Điểm danh" 
                                 icon={({icon, size}) => <FontAwesome name="calendar" color="#057aae" size={18}/>}
                                 onPress={() => navigation.navigate("Attendence", { page: getAttendanceScreen})}
@@ -232,7 +232,7 @@ function CustomDrawer({navigation, progress, ...props}) {
                                 label="Scan QR" 
                                 icon={({icon, size}) => <Ionicons name="scan" color="#057aae" size={18} />}
                                 onPress={() => navigation.navigate("ScanQR")}
-                            />
+                            /> */}
     
                         </Animated.View>
                     </DrawerContentScrollView>

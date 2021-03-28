@@ -6,6 +6,7 @@ import axios from 'axios';
 import host from '../assets/host'
 import { useDispatch } from 'react-redux';
 import { addUser } from '../actions/userAction'
+import { addInfo } from '../actions/followAction'
 
 import LottieView from 'lottie-react-native';
 import { useRef } from 'react';

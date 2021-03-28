@@ -178,6 +178,7 @@ const changePassword = ({ navigation }) => {
           newPass1: false,
           newPass2: false,
         })
+        await axios.post(`${host}/history/create`, { id: user.data._id, event:"ChangePassword" })
       }
     }
 

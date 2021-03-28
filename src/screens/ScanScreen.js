@@ -8,9 +8,11 @@ import {
   StatusBar,
   TouchableOpacity,
   Dimensions,
-  Modal
+  Modal,
+  Image
 } from 'react-native';
 import { BarCodeScanner } from 'expo-barcode-scanner';
+import { useSelector } from 'react-redux';
 // import Modal from 'react-native-modal';
 // icon store
 import { FontAwesome5 } from '@expo/vector-icons'; 
@@ -29,12 +31,19 @@ const screen = Dimensions.get("screen");
 const { width, height } = screen;
 
 import { LinearGradient } from 'expo-linear-gradient';
+import axios from 'axios';
+import host from '../assets/host';
 
-export default function ScanScreen({ navigation }) {
+export default function ScanScreen({ navigation, route }) {
+  const user = useSelector(state => state.userReducer)
+
   const [hasPermission, setHasPermission] = useState(null);
   const [scanned, setScanned] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
-  
+  const [studentData, setStudentData] = useState();
+  const [parentsData, setParentsData] = useState();
+  const [classData, setClassData] = useState();
+  const [teacherData, setTeacherData] = useState()
   const toggleModal = () => {
     setModalVisible(!isModalVisible);
   };
@@ -43,7 +52,9 @@ export default function ScanScreen({ navigation }) {
     setModalVisible(!isModalVisible);
     setScanned(false)
   }
-  
+
+ 
+
   const ModalComponent = () => {
     return (
       <Modal animationType = {"slide"} transparent = {false}
@@ -54,7 +65,8 @@ export default function ScanScreen({ navigation }) {
             <View style={{ backgroundColor: '#fff', width: width-30, zIndex: 999999, borderRadius: 10 }}>
                 <View style={{ justifyContent: 'center', alignItems: 'center' }}>
                     <Text style={{ padding: 10, fontSize: 18, textTransform: 'uppercase', fontWeight: 'bold', color: '#1C81DF' }}>
-                      Xuống xe</Text>
+                      {route.params.type === "OnBus" ? "Lên xe" : "Xuống xe" }
+                    </Text>
                 </View>
                 <LinearGradient 
                     start={{ x: 0, y: 0.5 }}
@@ -66,40 +78,43 @@ export default function ScanScreen({ navigation }) {
                     <Text style={{ color: '#6D2EF3', fontWeight: 'bold', fontSize: 15  }}>Thẻ học sinh</Text>
                 </LinearGradient>
                 {/* <View style={{ backgroundColor: '#2980B9', justifyContent: 'center', alignItems: 'center', padding: 10 }}>
-                    <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15  }}>Thẻ học sinh</Text>
+                    <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15f  }}>Thẻ học sinh</Text>
                 </View> */}
                 <View style={{ padding: 15 }}>
                   <View style={{ width: '100%', flexDirection: 'row' }}>
-                    <View style={{ width: '30%', height: 120, borderWidth: 1, }}>
-                            {/* Image */}
+                    <View style={{ width: 88, height: 120, borderWidth: 1, }}>
+                      { studentData ? <Image source={{ uri: `${host}/${studentData.avatar}`}} style={{ width: 88, height: 120 }}/> : null}
                     </View>
                     <View style={{ width: '70%', paddingLeft: 15 }}>
                      
                       <View style={{ borderBottomWidth: 1, borderBottomColor: '#839192', marginBottom: 5 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3}}>
                           <Text style={{ color: '#839192', fontSize: 13 }}>Họ và tên: </Text>
-                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>Trần Hữu Đan</Text>
+                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>{ studentData ? studentData.name : null }</Text>
                         </View>
                       </View>
 
                       <View style={{ borderBottomWidth: 1, borderBottomColor: '#839192', marginBottom: 5 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3}}>
                           <Text style={{ color: '#839192', fontSize: 13 }}>Giới tính: </Text>
-                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>Nam</Text>
+                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>{ !studentData ? null : studentData.gender === "Male" ? "Nam" : "Nữ."  }</Text>
                         </View>
                       </View>
 
                       <View style={{ borderBottomWidth: 1, borderBottomColor: '#839192', marginBottom: 5 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3}}>
                           <Text style={{ color: '#839192', fontSize: 13 }}>Lớp: </Text>
-                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>Lớp: 2A</Text>
+                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>Lớp: { classData ? classData.ClassCode : null }</Text>
                         </View>
                       </View>
 
                       <View style={{ borderBottomWidth: 1, borderBottomColor: '#839192', marginBottom: 5 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3}}>
                           <Text style={{ color: '#839192', fontSize: 13 }}>GVCN: </Text>
-                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>(Thầy) Thanh Phúc</Text>
+                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>
+                            ({ !teacherData ? null : teacherData.Gender === "Male" ? "Thầy" : "Cô"}) 
+                            { teacherData ? teacherData.FullName : null }
+                          </Text>
                         </View>
                       </View>
                     </View>
@@ -119,21 +134,27 @@ export default function ScanScreen({ navigation }) {
                       <View style={{ borderBottomWidth: 1, borderBottomColor: '#839192', marginBottom: 5 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3}}>
                           <Text style={{ color: '#839192', fontSize: 13 }}>Họ và tên: </Text>
-                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>Huỳnh Thanh Nhã</Text>
+                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>
+                              {/* Ho ten */}
+                          </Text>
                         </View>
                       </View>
 
                       <View style={{ borderBottomWidth: 1, borderBottomColor: '#839192', marginBottom: 5 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3}}>
-                          <Text style={{ color: '#839192', fontSize: 13 }}>SĐT: </Text>
-                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>Nam</Text>
+                          <Text style={{ color: '#839192', fontSize: 13 }}>Giới tính: </Text>
+                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>
+                              {/* Gioi tinh */}
+                          </Text>
                         </View>
                       </View>
 
                       <View style={{ borderBottomWidth: 1, borderBottomColor: '#839192', marginBottom: 5 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3}}>
                           <Text style={{ color: '#839192', fontSize: 13 }}>Mối quan hệ: </Text>
-                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>Cha</Text>
+                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>
+                              {/* MQH */}
+                          </Text>
                         </View>
                       </View>
 
@@ -144,7 +165,14 @@ export default function ScanScreen({ navigation }) {
                   <View style={{ flexDirection: 'row', margin: 15 }}>
                     <TouchableOpacity
                       style={{ flex: 1/2, height: 50, justifyContent: 'center', alignItems: 'center', marginHorizontal: 10, borderRadius: 30 }}
-                      onPress={openScan}
+                      onPress={() => {
+                        axios.post(`${host}/registerbus/attendance`,
+                         {id: parentsData._id, type: route.params.type, supervisorId: user.data._id}
+                        ),
+                        openScan()
+                      }
+                      }
+                      
                     >
                         <LinearGradient
                           start={{ x: 0, y: 2 }}
@@ -197,7 +225,7 @@ export default function ScanScreen({ navigation }) {
       </Modal>
     )
   }
-  
+
   useEffect(() => {
     (async () => {
       const { status } = await BarCodeScanner.requestPermissionsAsync();
@@ -205,7 +233,18 @@ export default function ScanScreen({ navigation }) {
     })();
   }, []);
 
-  const handleBarCodeScanned = ({ type, data }) => {
+  const handleBarCodeScanned = async ({ type, data }) => {
+    var dom1 = data.slice(data.indexOf("/")+2, data.length)
+    var dom2 = dom1.slice(dom1.indexOf("/")+1, dom1.length)
+    const isStudent = await axios.get(`${host}/${dom2}`)
+    const isParents = await axios.post(`${host}/users/getUserById`, { id: isStudent.data.parentsCode })
+    const isClass = await axios.post(`${host}/class/getClassById`, { id: isStudent.data.classCode })
+    const isTeacher = await axios.post(`${host}/teacher/getUserById`, { id: isStudent.data.teacherCode })
+    setStudentData(isStudent.data)
+    // console.log(isStudent.data);
+    setParentsData(isParents.data[0])
+    setTeacherData(isTeacher.data)
+    setClassData(isClass.data[0])
     setScanned(true);
     setModalVisible(!isModalVisible);
   };
@@ -235,11 +274,13 @@ export default function ScanScreen({ navigation }) {
     borderTopWidth: 3,
     borderColor: '#fff',
   };
+  
   const rightBottom = {
     borderRightWidth: 3,
     borderBottomWidth: 3,
     borderColor: '#fff',
   };
+
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />

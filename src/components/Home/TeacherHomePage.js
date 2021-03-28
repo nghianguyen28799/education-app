@@ -12,6 +12,9 @@ import {
     FlatList
 } from 'react-native'
 
+import axios from 'axios';
+import host from '../../assets/host';
+import { useDispatch, useSelector} from 'react-redux'
 // icon store
 import { FontAwesome5 } from '@expo/vector-icons'; 
 import { AntDesign } from '@expo/vector-icons'; 
@@ -32,20 +35,124 @@ const screen = Dimensions.get("screen");
 const { width, height } = screen;
 
 const TeacherHomePage = ({navigation}) => {
+    const dispatch = useDispatch();
+    const user = useSelector(state => state.userReducer)
+
+    const [isQtyOnBus, setQtyOnBus] = React.useState(0);
+    const [isQtyOutBus, setQtyOutBus] = React.useState(0);
+    const [totalList, setTotalList] = React.useState(0);
+    const [studentsList, setStudentsList] = React.useState([]);
+    const [studentsListOnBus, setStudentsListOnBus] = React.useState([]);
+    const [studentsListOutBus, setStudentsListOutBus] = React.useState([]);
+    const [scheduleInfo, setScheduleInfo] = React.useState({
+        date: new Date(),
+        process: {
+            "destination": 2,
+            "status": false,
+          },
+        status: {
+            "getOnBus": false,
+            "getOutBus": false,
+          },
+    });
+    const getData = async () => {
+        setStudentsListOnBus([])
+        setStudentsListOutBus([])
+        const isSchedule = await axios.post(`${host}/supervisorschedule/showdestination`, { id: user.data._id})
+        setScheduleInfo(isSchedule.data)
+        const newData = [];
+        var qtyOnBus = 0;
+        var qtyOutBus = 0;
+        const isList = await axios.post(`${host}/registerbus/showAllList`)
+        const dateNow = new Date(isSchedule.data.date).getDate()+1+"/"+new Date(isSchedule.data.date).getMonth()
+        // console.log(isList.data);
+        // console.log(isSchedule.data.process.destination);
+
+        isList.data.map(value => {
+            value.listBookStation.map(value2 => {
+                const getDate = (new Date(value2.date)).getDate()+'/'+(new Date(value2.date)).getMonth()
+                if(getDate === dateNow) {
+                    // newData.push({
+                    //     parentsId: value.parentsId,
+                    //     station: value2,
+                    // });
+                    
+                    axios.post(`${host}/student/getStudentByParentsId`, {id: value.parentsId})
+                    .then(res => {
+                        if(isSchedule.data.process.destination == 1 && isSchedule.data.status.getOnBus === true && value2.getOnBusFromHouse == false) {
+                            setStudentsListOnBus(studentsListOnBus => [
+                                ...studentsListOnBus,
+                                {
+                                    parentsId: value.parentsId,
+                                    student: res.data,
+                                    station: value2
+                                }
+                            ])
+                            qtyOnBus += 1
+                        } else if(isSchedule.data.process.destination == 2 && isSchedule.data.status.getOnBus === true && value2.getOnBusFromSchool == false) {
+                            setStudentsListOnBus(studentsListOnBus => [
+                                ...studentsListOnBus,
+                                {
+                                    parentsId: value.parentsId,
+                                    student: res.data,
+                                    station: value2
+                                }
+                            ])
+                            qtyOnBus += 1
+                        } 
+
+
+                        if(isSchedule.data.process.destination == 1 && isSchedule.data.status.getOutBus === true && value2.getOutBusFromHouse == false) {
+                            setStudentsListOutBus(studentsListOutBus => [
+                                ...studentsListOutBus,
+                                {
+                                    parentsId: value.parentsId,
+                                    student: res.data,
+                                    station: value2
+                                }
+                            ])
+                            qtyOutBus += 1
+                        } else if(isSchedule.data.process.destination == 2 && isSchedule.data.status.getOutBus === true && value2.getOutBusFromSchool == false) {
+                            setStudentsListOutBus(studentsListOutBus => [
+                                ...studentsListOutBus,
+                                {
+                                    parentsId: value.parentsId,
+                                    student: res.data,
+                                    station: value2
+                                }
+                            ])
+                            qtyOutBus += 1
+                        } 
+                    })
+                }    
+            })
+        })
+        
+       
+        setQtyOnBus(qtyOnBus);
+        setQtyOutBus(qtyOutBus); 
+        setTotalList(isList.data.length)
+    }
+
+    React.useEffect(() => {
+        getData()
+    },[])
+
     const getAttendanceScreen = {
-        title: 'Điểm danh',
+        title: 'Lên xe',
         status: 1,
         valueAnim: 0,
         colorLabel:['#fff', '#2980B9']
     }
 
     const getOutBusScreen = {
-        title: 'Xuống sớm',
+        title: 'Xuống xe',
         status: 2,
         valueAnim: width/2 - 10,
         colorLabel:['#2980B9', '#fff']
     }
 
+    // console.log(isQtyOnBus);
     return (
         <ScrollView>
             <View style={styles.container}>
@@ -81,88 +188,53 @@ const TeacherHomePage = ({navigation}) => {
                                 color: '#2980B9',
                                 fontWeight: 'bold',
                                 fontSize: 17,
-                            }}>Lên xe bến tiếp </Text>
+                            }}>Lên xe </Text>
                             <Text style={{
                                 fontSize: 17,
                                 color: '#FA0000',
-                                fontWeight: 'bold'
-                            }}>(10)</Text>
+                                fontWeight: 'bold',
+                            }}>({studentsListOnBus.length})</Text>
                         </View>
 
                         <View style={styles.attendance_management_list_on_thebus}>
-                            <ScrollView horizontal={true}>
-                                {/* <Text style={{ color: '#A6ACAF'}}>Không có thông tin học sinh.</Text> */}
-                                <TouchableOpacity>
-                                    <View style={styles.attendance_management_each_student_space}>
-                                        <View style={styles.attendance_management_each_student_image}>
-                                            <Image source={FemaleNoneAvatar} style={{
-                                                width: 90,
-                                                height: 90,
-                                                borderRadius: 20,
-                                            }}/>
-                                        </View>
-                                        <View style={styles.attendance_management_each_student_name}>
-                                            <Text style={{ 
-                                                color: '#2980B9',
-                                                fontWeight: '600'
-                                            }}>Hữu Đan</Text>
-                                        </View>
-                                    </View>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity>
-                                    <View style={styles.attendance_management_each_student_space}>
-                                        <View style={styles.attendance_management_each_student_image}>
-                                            <Image source={FemaleNoneAvatar} style={{
-                                                width: 90,
-                                                height: 90,
-                                                borderRadius: 20,
-                                            }}/>
-                                        </View>
-                                        <View style={styles.attendance_management_each_student_name}>
-                                            <Text style={{ 
-                                                color: '#2980B9',
-                                                fontWeight: '600'
-                                            }}>Khánh Duy</Text>
-                                        </View>
-                                    </View>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity>
-                                    <View style={styles.attendance_management_each_student_space}>
-                                        <View style={styles.attendance_management_each_student_image}>
-                                            <Image source={MaleNoneAvatar} style={{
-                                                width: 90,
-                                                height: 90,
-                                                borderRadius: 20,
-                                            }}/>
-                                        </View>
-                                        <View style={styles.attendance_management_each_student_name}>
-                                            <Text style={{ 
-                                                color: '#2980B9',
-                                                fontWeight: '600'
-                                            }}>Phước Nhân</Text>
-                                        </View>
-                                    </View>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity>
-                                    <View style={styles.attendance_management_each_student_space}>
-                                        <View style={styles.attendance_management_each_student_image}>
-                                            <Image source={MaleNoneAvatar} style={{
-                                                width: 90,
-                                                height: 90,
-                                                borderRadius: 20,
-                                            }}/>
-                                        </View>
-                                        <View style={styles.attendance_management_each_student_name}>
-                                            <Text style={{ 
-                                                color: '#2980B9',
-                                                fontWeight: '600'
-                                            }}>Khánh Thuận</Text>
-                                        </View>
-                                    </View>
-                                </TouchableOpacity>
+                            {}
+                            <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
+                                {
+                                    studentsList.length !== []
+                                    ? 
+                                    studentsListOnBus.map((value, index) => (
+                                        <TouchableOpacity   
+                                            key={index}
+                                            onPress={() => navigation.navigate('ViewProfileStudent', {
+                                                studentData: value.student
+                                            })}
+                                        >
+                                            <View style={styles.attendance_management_each_student_space}>
+                                                <View style={styles.attendance_management_each_student_image}>
+                                                    <Image 
+                                                        source={value.student.avatar ? {uri: `${host}/${value.student.avatar}`} : value.student.gender === 'Male' ? MaleNoneAvatar : FemaleNoneAvatar} 
+                                                    style={{
+                                                        width: 90,
+                                                        height: 90,
+                                                        borderRadius: 20,
+                                                        borderRadius: 50
+                                                    }}/>
+                                                </View>
+                                                <View style={styles.attendance_management_each_student_name}>
+                                                    <Text style={{ 
+                                                        color: '#2980B9',
+                                                        fontWeight: '600',
+                                                        width: 120, 
+                                                        textAlign: 'center',
+                                                        fontSize: 12
+                                                    }}> {value.student.name} </Text>
+                                                </View>
+                                            </View>
+                                        </TouchableOpacity>
+                                    ))
+                                    : 
+                                    <Text style={{ color: '#A6ACAF'}}>Không có thông tin học sinh.</Text>
+                                }
                             </ScrollView>
                         </View>
 
@@ -171,24 +243,70 @@ const TeacherHomePage = ({navigation}) => {
                                 color: '#2980B9',
                                 fontWeight: 'bold',
                                 fontSize: 17,
-                            }}>Xuống xe bến tiếp </Text>
+                            }}>Xuống xe </Text>
                             <Text style={{
                                 fontSize: 17,
                                 color: '#FA0000',
                                 fontWeight: 'bold',
-                            }}>(0)</Text>
-                            </View>
+                            }}>({studentsListOutBus.length})</Text>
+                        </View>
+
                         <View style={styles.attendance_management_list_off_thebus}>
-                            <Text style={{ color: '#A6ACAF'}}>Không có thông tin học sinh.</Text>
+                            <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
+                                {
+                                    studentsList.length !== []
+                                    ? 
+                                    studentsListOutBus.map((value, index) => (
+                                        <TouchableOpacity   
+                                            key={index}
+                                            onPress={() => navigation.navigate('ViewProfileStudent', {
+                                                studentData: value.student
+                                            })}
+                                        >
+                                            <View style={styles.attendance_management_each_student_space}>
+                                                <View style={styles.attendance_management_each_student_image}>
+                                                    <Image 
+                                                        source={value.student.avatar ? {uri: `${host}/${value.student.avatar}`} : value.student.gender === 'Male' ? MaleNoneAvatar : FemaleNoneAvatar} 
+                                                    style={{
+                                                        width: 90,
+                                                        height: 90,
+                                                        borderRadius: 20,
+                                                        borderRadius: 50
+                                                    }}/>
+                                                </View>
+                                                <View style={styles.attendance_management_each_student_name}>
+                                                    <Text style={{ 
+                                                        color: '#2980B9',
+                                                        fontWeight: '600',
+                                                        width: 120, 
+                                                        textAlign: 'center',
+                                                        fontSize: 12
+                                                    }}> {value.student.name} </Text>
+                                                </View>
+                                            </View>
+                                        </TouchableOpacity>
+                                    ))
+                                    : 
+                                    <Text style={{ color: '#A6ACAF'}}>Không có thông tin học sinh.</Text>
+                                }
+                            </ScrollView>
                         </View>
                     </View>
 
                     <View style={styles.status_of_destination_space}>
                         <View style={styles.status_of_destination_space_title}>
                             <View style={styles.status_of_destination_space_icons}>
-                                <FontAwesome5 name="school" size={20} color="#40E0D0" />
-                                <AntDesign name="right" size={16} color="black" style={{ marginLeft: 5, marginRight: 3 }}/>
-                                <MaterialIcons name="house" size={20} color="#40E0D0" />
+                                {
+                                    scheduleInfo.process.destination === 1
+                                    ?   <MaterialIcons name="house" size={20} color="#40E0D0" />
+                                    :   <FontAwesome5 name="school" size={20} color="#40E0D0" />
+                                }
+                                <AntDesign name="right" size={16} color="black" style={{ marginLeft: 3, marginRight: 3 }}/>
+                                {
+                                    scheduleInfo.process.destination === 1
+                                    ?    <FontAwesome5 name="school" size={20} color="#40E0D0" />
+                                    :   <MaterialIcons name="house" size={20} color="#40E0D0" />
+                                }
                             </View>
                             <Text style={{
                                 flex: 1,
@@ -197,13 +315,13 @@ const TeacherHomePage = ({navigation}) => {
                                 fontWeight: 'bold',
                                 color: '#2980B9',
                                 textAlign: 'right',
-                            }}>Đang diễn ra</Text>
+                            }}>{scheduleInfo.process.status === true ? "Đang diễn ra" : "Kết thúc"}</Text>
                         </View>
 
                         <View style={styles.status_of_destination_space_content}>
                             <View style={styles.status_of_destination_onoff_thebus}>
                                 <Text style={{ fontSize: 13, color: '#2980B9' }}>Lên xe: </Text>
-                                <Text style={{ fontSize: 13, color: '#2980B9' }}>0/0 </Text>
+                                <Text style={{ fontSize: 13, color: '#2980B9' }}>{totalList-studentsListOutBus.length}/{totalList}</Text>
                                 <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end' }}>
                                     <Text style={{ color: '#2980B9' }}>Bến tiếp: </Text>
                                     <Text style={{ color: '#2980B9', fontWeight: 'bold' }}>Nguyễn Văn Linh</Text>
@@ -211,9 +329,11 @@ const TeacherHomePage = ({navigation}) => {
                             </View>
                             <View style={styles.status_of_destination_onoff_thebus}>
                                 <Text style={{ fontSize: 13, color: '#2980B9' }}>Xuống xe: </Text>
-                                <Text style={{ fontSize: 13, color: '#2980B9' }}>10/13</Text>
+                                <Text style={{ fontSize: 13, color: '#2980B9' }}>{Number(totalList)-Number(studentsListOutBus.length)}/{totalList}</Text>
                                 <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end' }}>
-                                    <Text style={{ fontWeight: 'bold', color: '#A6ACAF' }}>10:41 AM 10-08-2020 </Text>
+                                    <Text style={{ fontWeight: 'bold', color: '#A6ACAF' }}>
+                                        { new Date(scheduleInfo.date).getDate() + '-' + (Number(new Date(scheduleInfo.date).getMonth())+1) + '-' + new Date(scheduleInfo.date).getFullYear()}
+                                    </Text>
                                 </View>
                             </View>
                         </View>
@@ -232,7 +352,7 @@ const TeacherHomePage = ({navigation}) => {
                                     
                                 </View>
                                 <View style={styles.each_function_space_name}>
-                                    <Text style={{ fontSize: 10, color: '#717D7E' }}>Điểm danh</Text>
+                                    <Text style={{ fontSize: 10, color: '#717D7E' }}>Lên xe</Text>
                                 </View>
                             </View>
                         </TouchableOpacity>
@@ -248,12 +368,14 @@ const TeacherHomePage = ({navigation}) => {
                                     
                                 </View>
                                 <View style={styles.each_function_space_name}>
-                                    <Text style={{ fontSize: 10, color: '#717D7E' }}>Xuống sớm</Text>
+                                    <Text style={{ fontSize: 10, color: '#717D7E' }}>Xuống xe</Text>
                                 </View>
                             </View>
                         </TouchableOpacity>
 
-                        <TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={getData}
+                        >
                             <View style={styles.each_function_space_middle}>
                                 <View style={styles.each_function_space_icon}>
                                     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -408,8 +530,8 @@ const styles = StyleSheet.create({
     attendance_management_each_student_name: {
         width: 90,
         height: 30,
-        justifyContent: 'flex-end',
-        alignItems: 'center'
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 
     status_of_destination_space: {

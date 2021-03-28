@@ -46,7 +46,7 @@ const AttendenceScreen = ({navigation, route}) => {
           easing: Easing.linear,
           useNativeDriver: false
         }).start();
-        setTitle('Điểm danh');
+        setTitle('Lên xe');
         setStatus(1)
         setColorLabel(['#fff', '#2980B9']);
     };
@@ -58,7 +58,7 @@ const AttendenceScreen = ({navigation, route}) => {
           easing: Easing.linear,
           useNativeDriver: false,
         }).start();
-        setTitle('Xuống sớm');
+        setTitle('Xuống xe');
         setStatus(2),
         setColorLabel(['#2980B9', '#fff']);
     };
@@ -81,14 +81,12 @@ const AttendenceScreen = ({navigation, route}) => {
                             <Text style={styles.titleHeader_text}>{title}</Text>
                         </View>
                         
-                        <TouchableOpacity
-                            onPress={() => navigation.navigate("MessageList")}
-                        >
-                            <View style={styles.RealtimeChatHeader}>
-                                <AntDesign name="message1" size={22} color="#6495ED" />
-                                <Text style={styles.RealtimeChatHeader_text}>9</Text>
-                            </View>
-                        </TouchableOpacity>
+                  
+                        <View style={styles.RealtimeChatHeader}>
+                            <AntDesign name="message1" size={22} color="#6495ED" />
+                            <Text style={styles.RealtimeChatHeader_text}>9</Text>
+                        </View>
+                  
                     </View>  
     
                     <View style={styles.body}>
@@ -96,12 +94,12 @@ const AttendenceScreen = ({navigation, route}) => {
                             
                             
                             <View style={styles.function_selector_left}>
-                                <Text style={{ fontSize: 17, fontWeight: 'bold', color: colorLabel[0] }}>Điểm danh</Text>
+                                <Text style={{ fontSize: 17, fontWeight: 'bold', color: colorLabel[0] }}>Lên xe</Text>
                             </View>
       
                             <TouchableOpacity onPress={changeOutBus} style={styles.function_selector_right}>
                                 <View style={styles.function_selector_right}>
-                                    <Text style={{ fontSize: 17, fontWeight: 'bold', color: colorLabel[1] }}>Xuống sớm</Text>
+                                    <Text style={{ fontSize: 17, fontWeight: 'bold', color: colorLabel[1] }}>Xuống xe</Text>
                                 </View>
                             </TouchableOpacity>
     
@@ -171,12 +169,12 @@ const AttendenceScreen = ({navigation, route}) => {
                             
                             <TouchableOpacity onPress={changeAttendence} style={styles.function_selector_left}>
                                 <View style={styles.function_selector_right}>
-                                    <Text style={{ fontSize: 17, fontWeight: 'bold', color: '#2980B9' }}>Điểm danh</Text>
+                                    <Text style={{ fontSize: 17, fontWeight: 'bold', color: '#2980B9' }}>Lên xe</Text>
                                 </View>
                             </TouchableOpacity>
     
                             <View style={styles.function_selector_right}>
-                                <Text style={{ fontSize: 17, fontWeight: 'bold', color: '#fff' }}>Xuống sớm</Text>
+                                <Text style={{ fontSize: 17, fontWeight: 'bold', color: '#fff' }}>Xuống xe</Text>
                             </View>
     
                             <View 
@@ -253,6 +251,7 @@ const styles = StyleSheet.create({
     RealtimeChatHeader: {
         flexDirection: 'row',
         padding: 10,
+        opacity: 0,
     },
 
     RealtimeChatHeader_text: {

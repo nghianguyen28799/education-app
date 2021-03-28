@@ -15,6 +15,7 @@ import {
 
 import Touchable from 'react-native-touchable-safe'
 // icon store
+
 import { FontAwesome5 } from '@expo/vector-icons'; 
 import { AntDesign } from '@expo/vector-icons'; 
 import { Entypo } from '@expo/vector-icons';
@@ -25,7 +26,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 // close icon store
 import backgroundHeader from '../../assets/images/background-parents-home.png';
-
+import KidWelcome from '../../assets/images/kid-welcome.jpg';
 const window = Dimensions.get("window");
 const screen = Dimensions.get("screen");
 
@@ -33,6 +34,7 @@ const { width, height } = screen;
 
 const TeacherHomePage = ({navigation}) => {
 
+    
     return (
         <View style={styles.container}>
             <StatusBar backgroundColor="#fff" barStyle="dark-content" />
@@ -50,7 +52,22 @@ const TeacherHomePage = ({navigation}) => {
                         </View>
                     </View>
                     <View style={styles.introduce}>
-
+                        <View style={styles.introduce_text}>
+                            <Text 
+                                style={{ fontSize: 22, marginBottom: 15, fontWeight: 'bold', color: "#fff", marginTop: 15 }}
+                            >
+                                Xin chào cô/chú
+                            </Text>
+                            <Text style={{ color: "#fff" }}> 
+                                Thường xuyên truy cập ứng dụng để quan tâm cho con em mình nhé!
+                            </Text>
+                        </View>
+                        <View style={styles.introduce_image}>
+                            <Image 
+                                source={KidWelcome}
+                                style={{ width: '100%', height: 150, marginBottom: 20}}
+                            />
+                        </View>
                     </View>
                 </ImageBackground>
             </View>
@@ -59,7 +76,10 @@ const TeacherHomePage = ({navigation}) => {
                 <View style={styles.category_border}>
                     
                     <View style={styles.categories_on_row}>
-                        <TouchableOpacity style={styles.each_category_space}>
+                        <TouchableOpacity 
+                            style={styles.each_category_space}
+                            onPress={() => navigation.navigate("Schedule")}
+                        >
                             <View style={styles.each_category}>
                                 <View style={styles.icon_category_border}>
                                     <View style={[styles.icon_category, {backgroundColor: "#3498DB"}]}>
@@ -111,14 +131,17 @@ const TeacherHomePage = ({navigation}) => {
                                 <View style={styles.name_category_border}>
                                     <View style={styles.name_category}>
                                         <Text style={{ fontSize: 13, textAlign: 'center', color: "#ff45e2" }}>
-                                            Chọn bến xe
+                                            Ghi danh xe đón
                                         </Text>
                                     </View>
                                 </View>
                             </View>
                         </TouchableOpacity>
 
-                        <View style={styles.each_category_space}>
+                        <TouchableOpacity 
+                            style={styles.each_category_space}
+                            onPress={() => navigation.navigate('History')}
+                        >
                             <View style={styles.each_category}>
                                 <View style={styles.icon_category_border}>
                                     <View style={[styles.icon_category, {backgroundColor: "#ff914d"}]}>
@@ -133,44 +156,48 @@ const TeacherHomePage = ({navigation}) => {
                                     </View>
                                 </View>
                             </View>
-                        </View>
+                        </TouchableOpacity>
                     </View>
 
                     <View style={styles.categories_on_row}>
-                        <View style={styles.each_category_space}>
+                        <TouchableOpacity 
+                            style={styles.each_category_space}
+                            onPress={() => navigation.navigate('Absence')}
+                        >
                             <View style={styles.each_category}>
                                 <View style={styles.icon_category_border}>
                                     <View style={[styles.icon_category, {backgroundColor: "#547efe"}]}>
-                                        {/* <FontAwesome5 name="bus" size={26} color="#fff" /> */}
+                                        <FontAwesome5 name="calendar-times" size={26} color="#fff" />
                                     </View>
                                 </View>
                                 <View style={styles.name_category_border}>
                                     <View style={styles.name_category}>
                                         <Text style={{ fontSize: 13, textAlign: 'center', color: "#547efe" }}>
-                                            {/* Đăng ký xe */}
+                                            Xin vắng
                                         </Text>
                                     </View>
                                 </View>
                             </View>
-                        </View>
-                        <View style={styles.each_category_space}>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.each_category_space}
+                            onPress={() => navigation.navigate("GpsFollow")}
+                        >
                             <View style={styles.each_category}>
                                 <View style={styles.icon_category_border}>
                                     <View style={[styles.icon_category, {backgroundColor: "#75f182"}]}>
-                                        {/* <FontAwesome name="history" size={26} color="#fff" /> */}
+                                        <FontAwesome5 name="map-marked-alt" size={26} color="#fff" />
                                     </View>
                                 </View>
                                 <View style={styles.name_category_border}>
                                     <View style={styles.name_category}>
                                         <Text style={{ fontSize: 13, textAlign: 'center', color: "#75f182" }}>
-                                            {/* Lịch sử */}
+                                            Theo dõi GPS
                                         </Text>
                                     </View>
                                 </View>
                             </View>
-                        </View>
+                        </TouchableOpacity>
                     </View>
-
                 </View>
             </View>
         </View>
@@ -201,7 +228,18 @@ const styles = StyleSheet.create({
     },
 
     introduce: {
-        borderWidth: 1,
+        // borderWidth: 1,
+        flexDirection: 'row'
+    },
+
+    introduce_text: {
+        // borderWidth: 1,
+        flex: 2/3
+    },
+
+    introduce_image: {
+        // borderWidth: 1,
+        flex: 1/3,
     },
 
     body: {

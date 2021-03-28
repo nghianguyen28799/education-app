@@ -26,6 +26,11 @@ import ViewProfileStudentScreen from '../screens/ViewProfileStudentScreen';
 import ViewProfileTeacherScreen from '../screens/ViewProfileTeacherScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import ChooseStationScreen from '../screens/ChooseStationScreen';
+import AbsenceScreen from '../screens/AbsenceScreen';
+import ScheduleScreen from '../screens/ScheduleScreen';
+import HistoryScreen from '../screens/HistoryScreen';
+import GpsFollowScreen from '../screens/GPSFollowScreen';
+
 // import ReasonAbsence from '../screens/ReasonAbsenceScreen';
 
 const Stack = createStackNavigator();
@@ -203,6 +208,10 @@ export default function StackNavigator () {
             <Stack.Screen name="ViewProfileTeacher" component={ViewProfileTeacherScreen} options={ navOptionHandle } />
             <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={ navOptionHandle } />
             <Stack.Screen name="ChooseStation" component={ChooseStationScreen} options={ navOptionHandle } />
+            <Stack.Screen name="Absence" component={AbsenceScreen} options={ navOptionHandle } />
+            <Stack.Screen name="Schedule" component={ScheduleScreen} options={ navOptionHandle } />
+            <Stack.Screen name="History" component={HistoryScreen} options={ navOptionHandle } />
+            <Stack.Screen name="GpsFollow" component={GpsFollowScreen} options={ navOptionHandle } />
             {/* <Stack.Screen name="ReasonAbsence" component={ReasonAbsence} options={ navOptionHandle }/> */}
         </Stack.Navigator>
     </NavigationContainer>

@@ -17,6 +17,10 @@ import {
 
 import { LinearGradient } from 'expo-linear-gradient';
 import UserCirle from '../../assets/images/user-circle.png'
+import { useSelector } from 'react-redux'
+import axios from 'axios';
+import host from '../../assets/host';
+
 // icon store
 import { FontAwesome5 } from '@expo/vector-icons'; 
 import { AntDesign } from '@expo/vector-icons'; 
@@ -32,99 +36,92 @@ const screen = Dimensions.get("screen");
 
 const { width, height } = screen;
 
-const data = [
-
-    {
-    id: 'bd7acbea-c1b1-46c2-aed5-3ad53abb28ba',
-    name: 'Nguyễn Trọng Nghĩa1',
-    success: true,
-    },
-    {
-    id: '3ac68afc-c605-48d3-a4f8-fbd91aa97f63',
-    name: 'Nguyễn Trọng Nghĩa2',
-    success: false,
-    },
-    {
-    id: '58694a0f-3da1-471f-bd96-145571e29d72',
-    name: 'Nguyễn Trọng Nghĩa3',
-    success: true,
-    },
-    {
-    id: '58694a0f-3da1-471f-bd96-145571e29d721',
-    name: 'Nguyễn Trọng Nghĩa4',
-    success: false,
-    },
-];
-
-const stationList = [
-    {name: 'Nguyễn Văn Cừ'},
-    {name: 'Nguyễn Văn Linh'},
-    {name: 'Trần Hưng Đạo'},
-    {name: 'Lý Tự Trọng'},
-]
-
-const Item = ({ name, success }) => (
-    <View>
-        {
-        success
-        ?
-        (<View 
-            style={{ 
-                borderColor: '#04B604', 
-                width: width/3-25, 
-                height: width/3+15,
-                borderWidth: 2, 
-                marginBottom: 5, 
-                borderRadius: 5, 
-                marginHorizontal: 2, 
-            }}>
-            {
-                success
-                &&
-                <View style={{ position: 'absolute', right: 1}}>
-                    <Entypo name="check" size={15} color="#04B604" />
-                </View>
-            }
+// const Item = ({ name, success }) => (
+//     <View>
+//         {
+//         success
+//         ?
+//         (<View 
+//             style={{ 
+//                 borderColor: '#04B604', 
+//                 width: width/3-25, 
+//                 height: width/3+15,
+//                 borderWidth: 2, 
+//                 marginBottom: 5, 
+//                 borderRadius: 5, 
+//                 marginHorizontal: 2, 
+//             }}>
+//             {
+//                 success
+//                 &&
+//                 <View style={{ position: 'absolute', right: 1}}>
+//                     <Entypo name="check" size={15} color="#04B604" />
+//                 </View>
+//             }
         
-            <View style={{ flex: 2/3, justifyContent: 'center', alignItems: 'center' }}>
-                <Image source={UserCirle} style={{ width: width/6*2-45  , height: width/6*2-45} }/>
-            </View>
-            <View style={{ flex: 1/3, alignItems: 'center' }}>
-                <Text style={{ textAlign: 'center', color: '#229954', fontSize: 12, fontWeight: 'bold' }}>{name}</Text>
-            </View>
-        </View>)
-        :
-        (<View 
-            style={{ 
-                borderColor: '#717D7E', 
-                width: width/3-25, 
-                height: width/3+15,
-                borderWidth: 2, 
-                marginBottom: 5, 
-                borderRadius: 5, 
-                marginHorizontal: 2, 
-            }}>
-            <View style={{ flex: 2/3, justifyContent: 'center', alignItems: 'center' }}>
-                <Image source={UserCirle} style={{ width: width/6*2-45  , height: width/6*2-45} }/>
-            </View>
-            <View style={{ flex: 1/3, alignItems: 'center' }}>
-                <Text style={{ textAlign: 'center', color: '#717D7E', fontSize: 12, fontWeight: 'bold' }}>{name}</Text>
-            </View>
-        </View>)
-        }
-    </View>
-);
+//             <View style={{ flex: 2/3, justifyContent: 'center', alignItems: 'center' }}>
+//                 <Image source={UserCirle} style={{ width: width/6*2-45  , height: width/6*2-45} }/>
+//             </View>
+//             <View style={{ flex: 1/3, alignItems: 'center' }}>
+//                 <Text style={{ textAlign: 'center', color: '#229954', fontSize: 12, fontWeight: 'bold' }}>{name}</Text>
+//             </View>
+//         </View>)
+//         :
+//         (<View 
+//             style={{ 
+//                 borderColor: '#717D7E', 
+//                 width: width/3-25, 
+//                 height: width/3+15,
+//                 borderWidth: 2, 
+//                 marginBottom: 5, 
+//                 borderRadius: 5, 
+//                 marginHorizontal: 2, 
+//             }}>
+//             <View style={{ flex: 2/3, justifyContent: 'center', alignItems: 'center' }}>
+//                 <Image source={UserCirle} style={{ width: width/6*2-45  , height: width/6*2-45} }/>
+//             </View>
+//             <View style={{ flex: 1/3, alignItems: 'center' }}>
+//                 <Text style={{ textAlign: 'center', color: '#717D7E', fontSize: 12, fontWeight: 'bold' }}>{name}</Text>
+//             </View>
+//         </View>)
+//         }
+//     </View>
+// );
 
 const AttendenceComponent = ({ navigation }) => {
+    const user = useSelector(state => state.userReducer)
 
     const [searchText, setSearchText] = React.useState('');
+    const [stationData, setStationData] = React.useState([]);
+    const [isStationSelected, setStationSelected] = React.useState("Chọn bến");
+    const [isStatus, setStatus] = React.useState(false)
+
+    const getData = async () => {
+        const isStation = await axios.post(`${host}/station/show`)
+        setStationData(isStation.data);
+        const isSchedule = await axios.post(`${host}/supervisorschedule/show`, { id: user.data._id })
+        if (isSchedule.data) {
+            setStatus(isSchedule.data.status.getOnBus)
+        } else {
+            console.log('khong');
+        }
+
+    }
+
+    React.useEffect(() => {
+        getData();
+    }, [])
 
     const handleSearchText = (val) => {
         setSearchText(val)
     }
 
     const heightAnimListStation = useRef(new Animated.Value(0)).current;
-    const maxHeightAnimListStation = stationList.length*50+30;
+    var maxHeightAnimListStation = 50;
+    if(stationData !== []) {
+        var maxHeightAnimListStation = stationData.length*50+30;
+    }
+
 
     let rotateValueHolder = new Animated.Value(0);
 
@@ -133,7 +130,7 @@ const AttendenceComponent = ({ navigation }) => {
     const getOpen = () => {
         Animated.timing(heightAnimListStation, {
             toValue: maxHeightAnimListStation,
-            duration: 500,
+            duration: 300,
             easing: Easing.linear,
             useNativeDriver: false
         }).start(() => setOpenAnimStation(!openAnimStation));
@@ -141,7 +138,7 @@ const AttendenceComponent = ({ navigation }) => {
         rotateValueHolder.setValue(0);
         Animated.timing(rotateValueHolder, {
           toValue: 1,
-          duration: 500,
+          duration: 300,
           easing: Easing.linear,
           useNativeDriver: false,
         }).start();
@@ -150,7 +147,7 @@ const AttendenceComponent = ({ navigation }) => {
     const getClose = () => {
         Animated.timing(heightAnimListStation, {
             toValue: 0,
-            duration: 500,
+            duration: 300,
             easing: Easing.linear,
             useNativeDriver: false
         }).start(() => setOpenAnimStation(!openAnimStation));
@@ -158,7 +155,7 @@ const AttendenceComponent = ({ navigation }) => {
         rotateValueHolder.setValue(0);
         Animated.timing(rotateValueHolder, {
           toValue: 1,
-          duration: 500,
+          duration: 300,
           easing: Easing.linear,
           useNativeDriver: false,
         }).start();
@@ -179,9 +176,13 @@ const AttendenceComponent = ({ navigation }) => {
     const renderItem = ({ item }) => (
         <Item name={item.name} success={item.success} />
     );
-
+  
     return (
        <View style={styles.container}>
+            <View style={{ flexDirection: 'row', flex: 1, alignItems: 'center', marginBottom: 15 }}>
+                    <Entypo name="arrow-with-circle-right" size={34} color="#48C9B0" />
+                    <Text style={{ paddingHorizontal: 10, color: '#148F77', fontWeight: 'bold', fontSize: 15}}>Bến sắp tới</Text>
+            </View>
            <View style={styles.station_selector_space}>
                 <TouchableOpacity
                     onPress={ !openAnimStation ? getOpen : getClose }
@@ -189,10 +190,8 @@ const AttendenceComponent = ({ navigation }) => {
                 <View style={{ flexDirection: 'row', flex: 1, alignItems: 'center', zIndex: 9999, paddingVertical: 12 }}>
                     <FontAwesome5 name="map-marker-alt" size={24} color="#2E86C1" />
                     <View style={{ flex: 1, justifyContent: 'center' }}>
-                        <Text style={{ paddingHorizontal: 15, color: '#2E86C1', fontWeight: 'bold' }}>Bến</Text>
+                        <Text style={{ paddingHorizontal: 15, color: '#2E86C1', fontWeight: 'bold' }}>{isStationSelected}</Text>
                     </View>
-
-                   
                         <Animated.View 
                              style={{ transform: [{ rotate: openAnimStation ? RotateData2 : RotateData1 }] }} 
                         >
@@ -202,50 +201,83 @@ const AttendenceComponent = ({ navigation }) => {
                                 color="#85C1E9" 
                             />
                         </Animated.View>
-                   
-  
                 </View>
                 <Animated.View style={{ flex: 1, height: heightAnimListStation, backgroundColor: '#fff', overflow: 'hidden'  }}>
                     {
-                        stationList.map((data, index) => (
-                            <TouchableOpacity>
-                                <View style={{ borderWidth: 1, height: 50, flexDirection: 'row', alignItems: 'center' }}>
-                                    {/* <FontAwesome5 name="bus" size={24} color="black" /> */}
+                        stationData !== []
+                        ?
+                        stationData.map((data, index) => (
+                            <TouchableOpacity
+                                key={index}
+                                onPress={() => {setStationSelected(data.name), getClose()}}
+                            >
+                                <View style={{ height: 50, flexDirection: 'row', alignItems: 'center' }}>
+                                    <FontAwesome5 name="bus" size={18} color="black" style={{ marginRight: 15 }}/>
                                     <Text>{data.name}</Text>
                                 </View>
                             </TouchableOpacity>
                         ))
+                        : null
                     }
                 </Animated.View>
                 </TouchableOpacity>
            </View>
 
            <View style={styles.info_station_space}>
-                <View style={{ flexDirection: 'row', flex: 1, alignItems: 'center'}}>
-                    <Entypo name="arrow-with-circle-right" size={34} color="#48C9B0" />
-                    <Text style={{ paddingHorizontal: 10, color: '#148F77', fontWeight: 'bold', fontSize: 15}}>Bến sắp tới</Text>
-                </View>
                 <View style={{ flexDirection: 'row', flex: 1, marginVertical: 10 }}>
                     <View style={{ flex: 1/2 }}>
                         <Text style={{ marginBottom: 10, fontSize: 13, color: '#2E86C1'}}>Mã xe: 6</Text>
                         <Text style={{ fontSize: 13, color: '#2E86C1' }}>Biển số xe: 65A - 56789</Text>
                     </View>
                     <View style={{ flex: 1/2, flexDirection: 'row' }}>
-                        <TouchableOpacity>
-                            <View style={{ width: width/9, height: width/9+15 }}>
-                                <View style={{ 
-                                    width: width/9, 
-                                    height: width/9, 
-                                    backgroundColor: '#fff', 
-                                    borderRadius: 10 ,
-                                    justifyContent: 'center',
-                                    alignItems: 'center'
-                                }}>
-                                    <Feather name="stop-circle" size={width/11} color="#A6ACAF" />
+                        {
+                            isStatus === false
+                            ?   // bat dau
+                            <TouchableOpacity
+                                onPress={async () => {
+                                    const isSchedule = await axios.post(`${host}/supervisorschedule/start`, { id: user.data._id, status: "OnBus" })
+                                    setStatus(true)
+                                }}
+                            >
+                                <View style={{ width: width/9, height: width/9+15 }}>
+                                    <View style={{ 
+                                        width: width/9, 
+                                        height: width/9, 
+                                        backgroundColor: '#fff', 
+                                        borderRadius: 10 ,
+                                        justifyContent: 'center',
+                                        alignItems: 'center'
+                                    }}>
+                                        <Feather name="stop-circle" size={width/11} color="#3498DB" />
+                                    </View>
+                                    <Text style={{ fontSize: 9, textAlign: 'center', color:'#3498DB' }}>Bắt đầu</Text>
                                 </View>
-                                <Text style={{ fontSize: 9, textAlign: 'center', color:'#717D7E' }}>Kết thúc</Text>
-                            </View>
-                        </TouchableOpacity>
+                            </TouchableOpacity>
+                            :   // ket thuc
+                            <TouchableOpacity
+                                onPress={async () => {
+                                    const isSchedule = await axios.post(`${host}/supervisorschedule/end`, { id: user.data._id, status: "OnBus" })
+                                    setStatus(false)
+                                }}
+                            >
+                                <View style={{ width: width/9, height: width/9+15 }}>
+                                    <View style={{ 
+                                        width: width/9, 
+                                        height: width/9, 
+                                        backgroundColor: '#fff', 
+                                        borderRadius: 10 ,
+                                        justifyContent: 'center',
+                                        alignItems: 'center'
+                                    }}>
+                                        <Feather name="stop-circle" size={width/11} color="#A6ACAF" />
+                                    </View>
+                                    <Text style={{ fontSize: 9, textAlign: 'center', color:'#717D7E' }}>Kết thúc</Text>
+                                </View>
+                            </TouchableOpacity>
+                        }
+                       
+                        
+                        
                         
                         <TouchableOpacity>
                             <View style={{ width: width/9, height: width/9+15, marginHorizontal: width/15 }}>
@@ -257,14 +289,16 @@ const AttendenceComponent = ({ navigation }) => {
                                     justifyContent: 'center',
                                     alignItems: 'center'
                                 }}>
-                                    <FontAwesome name="share-square-o" size={24} size={width/12} color="#40E0D0" />
+                                    <AntDesign name="notification" size={24} color="#40E0D0" />
                                 </View>
-                                <Text style={{ fontSize: 9, textAlign: 'center', color: '#2E86C1' }}>Bỏ bến</Text>
+                                <Text style={{ fontSize: 9, textAlign: 'center', color: '#2E86C1' }}>Gửi thông báo</Text>
                             </View>
                         </TouchableOpacity>
                         
                         <TouchableOpacity
-                            onPress={() => navigation.navigate("ScanQR")}
+                            onPress={() => navigation.navigate("ScanQR", {
+                                type: "OnBus"
+                            })}
                         >
                             <View style={{ width: width/9, height: width/9+15 }}>
                                 <View style={{ 
@@ -343,12 +377,12 @@ const AttendenceComponent = ({ navigation }) => {
                     </View>
 
                     <View style={{ flex: 1, alignItems: 'center' }}>
-                    <FlatList
+                    {/* <FlatList
                         data={data}
                         numColumns={3}
                         renderItem={renderItem}
                         keyExtractor={item => item.id}
-                    />
+                    /> */}
                     </View>
                 </View>
            </View>
@@ -361,7 +395,7 @@ export default AttendenceComponent;
 const styles = StyleSheet.create({ 
     container: {
         flex: 1,
-        marginVertical: 10,
+        // marginVertical: 10,
         marginHorizontal: 10,
     },
 

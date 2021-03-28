@@ -380,7 +380,7 @@ const ProfileParentsScreen = ({ navigation }) => {
                             <TouchableOpacity onPress={() => bs2.current.snapTo(0)}>
                                 {
                                     imageParents
-                                    ? <Image source={{ uri: `${host}/${imageStudent}` }} style={{ width: 120, height: 120, borderRadius: 70 }}/> 
+                                    ? <Image source={{ uri: `${host}/${imageStudent}` }} style={{ width: 120, height: 120, borderRadius: 70, borderWidth: 3, borderColor: '#9EBBD0' }}/> 
                                     : studentData.gender === "Male"
                                     ?  <Image source={MaleNoneAvatar} style={{ width: 80, height: 80 }}/> 
                                     : studentData.gender === "Female"

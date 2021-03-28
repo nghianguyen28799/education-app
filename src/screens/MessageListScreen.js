@@ -115,7 +115,6 @@ const MessageListScreen = ({navigation}) => {
       <Item data={item} />
     );
 
-    console.log(listData);
     const HeaderComponent = () => {
       if(!isSearch){
         return (

@@ -38,6 +38,7 @@ const MessageScreen = ({ navigation, route }) => {
     const [room, setRoom] = React.useState('');
     const [messages, setMessages] = React.useState([]);
 
+
     if(user.data.permission === "parents") {
         const [studentData, setStudentData] = React.useState();
         const [teacherData, setTeacherData] = React.useState([]);
@@ -49,7 +50,7 @@ const MessageScreen = ({ navigation, route }) => {
     
         const getData = async () => {
           try{
-            socket = io(host);
+            socket = io.connect(host);
           
             const isStudent = await axios.post(`${host}/student/getStudentByParentsId`, {id: user.data._id})
             const isTeacher = await axios.post(`${host}/teacher/getUserById`, {id: isStudent.data.teacherCode})
@@ -59,7 +60,7 @@ const MessageScreen = ({ navigation, route }) => {
   
             const name = user.data.FullName;
             const room = isTeacher.data._id+'_'+user.data._id;
-            
+           
             axios.post(`${host}/chat/checkroom`, {room} )
 
             const getMessages = await  axios.post(`${host}/chat/showMessages`, {room} )
@@ -69,10 +70,8 @@ const MessageScreen = ({ navigation, route }) => {
             setName(name);
             setRoom(room);
   
-            socket.emit('join', { name, room }, () => {
-                console.log('joined');
-            });
-  
+            socket.emit('join', { name, room });
+   
             return () => {
               socket.emit('disconnect');
               socket.off();
