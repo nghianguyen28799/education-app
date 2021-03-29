@@ -65,7 +65,7 @@ const AttendenceScreen = ({navigation, route}) => {
 
     if( status === 1) {
         return (
-            <ScrollView>
+            <View style={{ position: 'absolute', width: width}}>
                 <View style={styles.container}>
                     <StatusBar backgroundColor="#fff" barStyle="dark-content" />
                     <View style={styles.header}>
@@ -133,11 +133,11 @@ const AttendenceScreen = ({navigation, route}) => {
                     </View>
                 </View>
                 <AttendenceComponent navigation={navigation}/>
-            </ScrollView>
+            </View>
         );
     } else {
         return (
-            <ScrollView>
+            <View style={{ position: 'absolute', width: width}}>
                 <View style={styles.container}>
                     <StatusBar backgroundColor="#fff" barStyle="dark-content" />
                     <View style={styles.header}>
@@ -206,7 +206,7 @@ const AttendenceScreen = ({navigation, route}) => {
                     </View>
                 </View>
                 <OutBusComponent navigation={navigation} />
-            </ScrollView>
+            </View>
         );
     }
 };

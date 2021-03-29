@@ -34,6 +34,20 @@ import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import host from '../assets/host';
 
+const getAttendanceScreen = {
+  title: 'Lên xe',
+  status: 1,
+  valueAnim: 0,
+  colorLabel:['#fff', '#2980B9']
+}
+
+const getOutBusScreen = {
+  title: 'Xuống xe',
+  status: 2,
+  valueAnim: width/2 - 10,
+  colorLabel:['#2980B9', '#fff']
+}
+
 export default function ScanScreen({ navigation, route }) {
   const user = useSelector(state => state.userReducer)
 
@@ -167,12 +181,18 @@ export default function ScanScreen({ navigation, route }) {
                       style={{ flex: 1/2, height: 50, justifyContent: 'center', alignItems: 'center', marginHorizontal: 10, borderRadius: 30 }}
                       onPress={() => {
                         axios.post(`${host}/registerbus/attendance`,
-                         {id: parentsData._id, type: route.params.type, supervisorId: user.data._id}
-                        ),
-                        openScan()
+                         {id: parentsData._id, type: route.params.type, supervisorId: route.params.supervisorId}
+                        ).then(res => {
+                          // console.log(res.data);
+                          if(res.data.updated === true && route.params.type === "OnBus") {
+                            navigation.replace('Attendence', {page: getAttendanceScreen })
+                          } else if(res.data.updated === true && route.params.type === "OutBus") {
+                            navigation.replace('Attendence', { page: getOutBusScreen })
+                          }
+                        })
+                        
                       }
                       }
-                      
                     >
                         <LinearGradient
                           start={{ x: 0, y: 2 }}

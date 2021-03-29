@@ -60,12 +60,12 @@ const TeacherHomePage = ({navigation}) => {
         setStudentsListOutBus([])
         const isSchedule = await axios.post(`${host}/supervisorschedule/showdestination`, { id: user.data._id})
         setScheduleInfo(isSchedule.data)
-        const newData = [];
+        // const newData = [];
         var qtyOnBus = 0;
         var qtyOutBus = 0;
         const isList = await axios.post(`${host}/registerbus/showAllList`)
-        const dateNow = new Date(isSchedule.data.date).getDate()+1+"/"+new Date(isSchedule.data.date).getMonth()
-        // console.log(isList.data);
+        const dateNow = new Date(isSchedule.data.date).getDate()+"/"+new Date(isSchedule.data.date).getMonth()
+
         // console.log(isSchedule.data.process.destination);
 
         isList.data.map(value => {
@@ -127,13 +127,12 @@ const TeacherHomePage = ({navigation}) => {
                 }    
             })
         })
-        
-       
         setQtyOnBus(qtyOnBus);
         setQtyOutBus(qtyOutBus); 
         setTotalList(isList.data.length)
     }
 
+    // console.log(studentsListOnBus);
     React.useEffect(() => {
         getData()
     },[])
@@ -187,10 +186,10 @@ const TeacherHomePage = ({navigation}) => {
                             <Text style={{ 
                                 color: '#2980B9',
                                 fontWeight: 'bold',
-                                fontSize: 17,
+                                fontSize: 16,
                             }}>Lên xe </Text>
                             <Text style={{
-                                fontSize: 17,
+                                fontSize: 16,
                                 color: '#FA0000',
                                 fontWeight: 'bold',
                             }}>({studentsListOnBus.length})</Text>
@@ -214,9 +213,8 @@ const TeacherHomePage = ({navigation}) => {
                                                     <Image 
                                                         source={value.student.avatar ? {uri: `${host}/${value.student.avatar}`} : value.student.gender === 'Male' ? MaleNoneAvatar : FemaleNoneAvatar} 
                                                     style={{
-                                                        width: 90,
-                                                        height: 90,
-                                                        borderRadius: 20,
+                                                        width: 70,
+                                                        height: 70,
                                                         borderRadius: 50
                                                     }}/>
                                                 </View>
@@ -242,10 +240,10 @@ const TeacherHomePage = ({navigation}) => {
                             <Text style={{ 
                                 color: '#2980B9',
                                 fontWeight: 'bold',
-                                fontSize: 17,
+                                fontSize: 16,
                             }}>Xuống xe </Text>
                             <Text style={{
-                                fontSize: 17,
+                                fontSize: 16,
                                 color: '#FA0000',
                                 fontWeight: 'bold',
                             }}>({studentsListOutBus.length})</Text>
@@ -268,9 +266,8 @@ const TeacherHomePage = ({navigation}) => {
                                                     <Image 
                                                         source={value.student.avatar ? {uri: `${host}/${value.student.avatar}`} : value.student.gender === 'Male' ? MaleNoneAvatar : FemaleNoneAvatar} 
                                                     style={{
-                                                        width: 90,
-                                                        height: 90,
-                                                        borderRadius: 20,
+                                                        width: 70,
+                                                        height: 70,
                                                         borderRadius: 50
                                                     }}/>
                                                 </View>
@@ -516,15 +513,17 @@ const styles = StyleSheet.create({
 
     attendance_management_each_student_space: {
         width: 90,
-        height: 120,
+        height: 90,
         // borderRadius: 20,
         marginRight: 15,
     },
 
     attendance_management_each_student_image: {
         width: 90,
-        height: 90,
+        height: 70,
         borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center'
     },
 
     attendance_management_each_student_name: {

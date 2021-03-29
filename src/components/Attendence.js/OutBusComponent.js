@@ -16,7 +16,9 @@ import {
 } from 'react-native'
 
 import { LinearGradient } from 'expo-linear-gradient';
-import UserCirle from '../../assets/images/user-circle.png'
+import MaleNoneAvatar from '../../assets/images/male-none-avatar.png'
+import FemaleNoneAvatar from '../../assets/images/female-none-avatar.png'
+// import UserCirle from '../../assets/images/user-circle.png'
 import { useSelector } from 'react-redux'
 import axios from 'axios';
 import host from '../../assets/host';
@@ -36,57 +38,71 @@ const screen = Dimensions.get("screen");
 
 const { width, height } = screen;
 
-// const Item = ({ name, success }) => (
-//     <View>
-//         {
-//         success
-//         ?
-//         (<View 
-//             style={{ 
-//                 borderColor: '#04B604', 
-//                 width: width/3-25, 
-//                 height: width/3+15,
-//                 borderWidth: 2, 
-//                 marginBottom: 5, 
-//                 borderRadius: 5, 
-//                 marginHorizontal: 2, 
-//             }}>
-//             {
-//                 success
-//                 &&
-//                 <View style={{ position: 'absolute', right: 1}}>
-//                     <Entypo name="check" size={15} color="#04B604" />
-//                 </View>
-//             }
+const Item = ({ item }) => (
+    <View>
+        {
+        item.station.getOutBusFromHouse
+        ?
+        (<View 
+            style={{ 
+                borderColor: '#04B604', 
+                width: width/3-25, 
+                height: width/3+15,
+                borderWidth: 2, 
+                marginBottom: 5, 
+                borderRadius: 5, 
+                marginHorizontal: 2, 
+            }}>
+            {
+               item.station.getOutBusFromHouse
+                &&
+                <View style={{ position: 'absolute', right: 1}}>
+                    <Entypo name="check" size={15} color="#04B604" />
+                </View>
+            }
         
-//             <View style={{ flex: 2/3, justifyContent: 'center', alignItems: 'center' }}>
-//                 <Image source={UserCirle} style={{ width: width/6*2-45  , height: width/6*2-45} }/>
-//             </View>
-//             <View style={{ flex: 1/3, alignItems: 'center' }}>
-//                 <Text style={{ textAlign: 'center', color: '#229954', fontSize: 12, fontWeight: 'bold' }}>{name}</Text>
-//             </View>
-//         </View>)
-//         :
-//         (<View 
-//             style={{ 
-//                 borderColor: '#717D7E', 
-//                 width: width/3-25, 
-//                 height: width/3+15,
-//                 borderWidth: 2, 
-//                 marginBottom: 5, 
-//                 borderRadius: 5, 
-//                 marginHorizontal: 2, 
-//             }}>
-//             <View style={{ flex: 2/3, justifyContent: 'center', alignItems: 'center' }}>
-//                 <Image source={UserCirle} style={{ width: width/6*2-45  , height: width/6*2-45} }/>
-//             </View>
-//             <View style={{ flex: 1/3, alignItems: 'center' }}>
-//                 <Text style={{ textAlign: 'center', color: '#717D7E', fontSize: 12, fontWeight: 'bold' }}>{name}</Text>
-//             </View>
-//         </View>)
-//         }
-//     </View>
-// );
+            <View style={{ flex: 2/3, justifyContent: 'center', alignItems: 'center' }}>
+                <Image 
+                    source={item.student.avatar ? {uri: `${host}/${item.student.avatar}`} : item.student.gender === 'Male' ? MaleNoneAvatar : FemaleNoneAvatar} 
+                    style={{
+                        width: width/6*2-45, 
+                        height: width/6*2-45,
+                        borderRadius: 50
+                    }}
+                />
+            </View>
+            <View style={{ flex: 1/3, alignItems: 'center' }}>
+                <Text style={{ textAlign: 'center', color: '#229954', fontSize: 12, fontWeight: 'bold' }}>{item.student.name}</Text>
+            </View>
+        </View>)
+        :
+        (<View 
+            style={{ 
+                borderColor: '#717D7E', 
+                width: width/3-25, 
+                height: width/3+15,
+                borderWidth: 2, 
+                marginBottom: 5, 
+                borderRadius: 5, 
+                marginHorizontal: 2, 
+            }}>
+            <View style={{ flex: 2/3, justifyContent: 'center', alignItems: 'center' }}>
+                <Image 
+                    source={item.student.avatar ? {uri: `${host}/${item.student.avatar}`} : item.student.gender === 'Male' ? MaleNoneAvatar : FemaleNoneAvatar} 
+                    style={{
+                        width: width/6*2-45, 
+                        height: width/6*2-45,
+                        borderRadius: 50
+                    }}
+                />
+            </View>
+            <View style={{ flex: 1/3, alignItems: 'center' }}>
+                <Text style={{ textAlign: 'center', color: '#717D7E', fontSize: 12, fontWeight: 'bold' }}>{item.student.name}</Text>
+            </View>
+        </View>)
+        }
+    </View>
+)
 
 const AttendenceComponent = ({ navigation }) => {
     const user = useSelector(state => state.userReducer)
@@ -94,6 +110,8 @@ const AttendenceComponent = ({ navigation }) => {
     const [searchText, setSearchText] = React.useState('');
     const [stationData, setStationData] = React.useState([]);
     const [isStationSelected, setStationSelected] = React.useState("Chọn bến");
+    const [studentList, setStudentList] = React.useState([]);
+    const [studentListAtStation, setStudentListAtStation] = React.useState([]);
     const [isStatus, setStatus] = React.useState(false)
 
     const getData = async () => {
@@ -101,15 +119,38 @@ const AttendenceComponent = ({ navigation }) => {
         setStationData(isStation.data);
         const isSchedule = await axios.post(`${host}/supervisorschedule/show`, { id: user.data._id })
         if (isSchedule.data) {
-            setStatus(isSchedule.data.status.getOutBus)
-        } else {
-            console.log('khong');
+            setStatus(isSchedule.data.status.getOnBus)
         }
+    }
 
+    const getStudent = async () => {
+        setStudentList([]);
+        const isSchedule = await axios.post(`${host}/supervisorschedule/showdestination`, { id: user.data._id})
+
+        const isList = await axios.post(`${host}/registerbus/showAllList`)
+        const dateNow = new Date(isSchedule.data.date).getDate()+"/"+new Date(isSchedule.data.date).getMonth()
+        isList.data.map(value => {
+            value.listBookStation.map(value2 => {
+                const getDate = (new Date(value2.date)).getDate()+'/'+(new Date(value2.date)).getMonth()
+                if(getDate === dateNow) {
+                    axios.post(`${host}/student/getStudentByParentsId`, {id: value.parentsId})
+                    .then(res => {
+                        setStudentList(studentList => [...studentList, 
+                            {
+                                valueparentsId: value.parentsId,
+                                student: res.data,
+                                station: value2
+                            }]
+                        )
+                    })
+                }    
+            })
+        })
     }
 
     React.useEffect(() => {
         getData();
+        getStudent();
     }, [])
 
     const handleSearchText = (val) => {
@@ -129,7 +170,7 @@ const AttendenceComponent = ({ navigation }) => {
     const getOpen = () => {
         Animated.timing(heightAnimListStation, {
             toValue: maxHeightAnimListStation,
-            duration: 300,
+            duration: 100,
             easing: Easing.linear,
             useNativeDriver: false
         }).start(() => setOpenAnimStation(!openAnimStation));
@@ -137,7 +178,7 @@ const AttendenceComponent = ({ navigation }) => {
         rotateValueHolder.setValue(0);
         Animated.timing(rotateValueHolder, {
           toValue: 1,
-          duration: 300,
+          duration: 100,
           easing: Easing.linear,
           useNativeDriver: false,
         }).start();
@@ -146,7 +187,7 @@ const AttendenceComponent = ({ navigation }) => {
     const getClose = () => {
         Animated.timing(heightAnimListStation, {
             toValue: 0,
-            duration: 300,
+            duration: 100,
             easing: Easing.linear,
             useNativeDriver: false
         }).start(() => setOpenAnimStation(!openAnimStation));
@@ -154,7 +195,7 @@ const AttendenceComponent = ({ navigation }) => {
         rotateValueHolder.setValue(0);
         Animated.timing(rotateValueHolder, {
           toValue: 1,
-          duration: 300,
+          duration: 100,
           easing: Easing.linear,
           useNativeDriver: false,
         }).start();
@@ -172,15 +213,21 @@ const AttendenceComponent = ({ navigation }) => {
         outputRange: ['180deg', '360deg'],
     });
 
-    const renderItem = ({ item }) => (
-        <Item name={item.name} success={item.success} />
-    );
+    const changeStation = async (data) => {
+        const isStudentList = await studentList.filter(value => {
+            return value.station.station === data._id
+        }) 
+
+        setStudentListAtStation(isStudentList);
+        setStationSelected(data.name); 
+        getClose()
+    }
   
     return (
        <View style={styles.container}>
             <View style={{ flexDirection: 'row', flex: 1, alignItems: 'center', marginBottom: 15 }}>
-                    <Entypo name="arrow-with-circle-right" size={34} color="#48C9B0" />
-                    <Text style={{ paddingHorizontal: 10, color: '#148F77', fontWeight: 'bold', fontSize: 15}}>Bến sắp tới</Text>
+                    <Entypo name="arrow-with-circle-right" size={24} color="#48C9B0" />
+                    <Text style={{ paddingHorizontal: 10, color: '#148F77', fontWeight: 'bold', fontSize: 14}}>Bến sắp tới</Text>
             </View>
            <View style={styles.station_selector_space}>
                 <TouchableOpacity
@@ -208,7 +255,7 @@ const AttendenceComponent = ({ navigation }) => {
                         stationData.map((data, index) => (
                             <TouchableOpacity
                                 key={index}
-                                onPress={() => {setStationSelected(data.name), getClose()}}
+                                onPress={() => changeStation(data)}
                             >
                                 <View style={{ height: 50, flexDirection: 'row', alignItems: 'center' }}>
                                     <FontAwesome5 name="bus" size={18} color="black" style={{ marginRight: 15 }}/>
@@ -296,7 +343,8 @@ const AttendenceComponent = ({ navigation }) => {
                         
                         <TouchableOpacity
                             onPress={() => navigation.navigate("ScanQR", {
-                                type: "OutBus"
+                                type: "OutBus",
+                                supervisorId: user.data._id
                             })}
                         >
                             <View style={{ width: width/9, height: width/9+15 }}>
@@ -376,12 +424,12 @@ const AttendenceComponent = ({ navigation }) => {
                     </View>
 
                     <View style={{ flex: 1, alignItems: 'center' }}>
-                    {/* <FlatList
-                        data={data}
-                        numColumns={3}
-                        renderItem={renderItem}
-                        keyExtractor={item => item.id}
-                    /> */}
+                        <FlatList
+                            data={studentListAtStation}
+                            numColumns={3}
+                            renderItem={Item}
+                            keyExtractor={ item => item.student._id}
+                        />
                     </View>
                 </View>
            </View>
