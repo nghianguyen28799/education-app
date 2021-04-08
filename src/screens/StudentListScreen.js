@@ -35,6 +35,7 @@ const ListStudentScreen = ({ navigation }) => {
 
     const [searchText, setSearchText] = React.useState('');
     const [data, setData] = React.useState([]);
+    const [filterData, setFilterData] = React.useState([]);
 
     const getData = async () => {
         const classCode = user.data.ClassCode;
@@ -43,16 +44,30 @@ const ListStudentScreen = ({ navigation }) => {
         const studentData = isStudent.data.filter(value => {
             return value.classCode === classCode
         })
-
         setData(studentData)
+        setFilterData(studentData)
     }
 
     React.useEffect(() => {
         getData();
     },[])
 
-    const changeSearchText = (value) => {
-        setSearchText(value);
+    const changeSearchText = (text) => {
+        setSearchText(text);
+        if(text) {
+            const newData = data.filter((item) => {
+                const itemData = item.name 
+                                ? item.name.toUpperCase()
+                                : ''.toUpperCase() 
+                const textData = text.toUpperCase();
+                return itemData.indexOf(textData) > -1
+            });
+            setFilterData(newData);
+   
+        }
+        else {
+            setFilterData(data);
+        }
     }
 
     const Item = ({ item }) => (
@@ -125,7 +140,7 @@ const ListStudentScreen = ({ navigation }) => {
                 </View>
                 <View style={styles.students_list_space}>
                     <FlatList
-                        data={data}
+                        data={filterData}
                         numColumns={3}
                         renderItem={Item}
                         keyExtractor={item => item._id}

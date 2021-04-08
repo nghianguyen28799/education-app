@@ -53,7 +53,9 @@ const ViewProfileStudentScreen = ({ navigation, route }) => {
     },[])
 
     return (
-        <ScrollView>
+        <ScrollView
+            showsVerticalScrollIndicator={false}
+        >
             <View style={styles.container}>
                 <StatusBar backgroundColor="#fff" barStyle="dark-content" />
                 <View style={styles.header}>

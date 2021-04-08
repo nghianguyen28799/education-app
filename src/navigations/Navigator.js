@@ -14,6 +14,7 @@ import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
 import SlideBar from '../components/CustomDrawer';
 import ScanScreen from '../screens/ScanScreen'
+import ScanForTeacherScreen from '../screens/ScanForTeacherScreen'
 import MessageListScreen from '../screens/MessageListScreen';
 import MessageScreen from '../screens/MessageScreen';
 import WelcomeScreen from '../screens/WelcomeScreen'
@@ -30,7 +31,10 @@ import AbsenceScreen from '../screens/AbsenceScreen';
 import ScheduleScreen from '../screens/ScheduleScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import GpsFollowScreen from '../screens/GPSFollowScreen';
-
+import ChatListForParentsScreen from '../screens/ChatListForParentsScreen';
+import TeacherHomePageScreen from '../components/Home/TeacherHomePage';
+import ViewFullTeacherScheduleScreen from '../screens/ViewFullTeacherSchedule';
+import AttendanceForTeacherScreen from '../screens/AttendanceForTeacherScreen';
 // import ReasonAbsence from '../screens/ReasonAbsenceScreen';
 
 const Stack = createStackNavigator();
@@ -112,6 +116,23 @@ function DrawerNavigator({ navigation }) {
   )
 }
 
+function DrawerNavigatorTeacher({ navigation }) {
+    return (
+      <Drawer.Navigator initialRouteName="Home" drawerContent={props => <SlideBar {...props} />}>
+          <Drawer.Screen 
+              name="Home" 
+              component={TeacherHomePageScreen}
+              option={{
+                  drawerIcon: ({ focused, color, size }) => (
+                      <Ionicons name="home" color="#000" size={18} />
+                  )
+              }} 
+          />
+      </Drawer.Navigator>
+    )
+  }
+
+
 function BottomTagNavigator() {
   return (
     <Tab.Navigator
@@ -155,36 +176,6 @@ function BottomTagNavigator() {
             )
         }}
     />
-
-    <Tab.Screen
-        name="Profile123"
-        component={ProfileScreen}
-        options={{
-            tabBarIcon: ({ focused }) => (
-              <FontAwesome name="user" color={ focused ? "#03a9f4" : "#3e3e3e" } size={22} />
-            ),
-            tabBarButton: (props) => (
-                <TabBarCustomButton
-                    {...props}
-                />
-            )
-        }}
-    />
-
-  <Tab.Screen
-        name="Setting"
-        component={HomeScreen}
-        options={{
-            tabBarIcon: ({ focused }) => (
-              <Ionicons name="settings" color={ focused ? "#03a9f4" : "#3e3e3e" } size={22} />
-            ),
-            tabBarButton: (props) => (
-                <TabBarCustomButton
-                    {...props}
-                />
-            )
-        }}
-    />
     </Tab.Navigator>
   )
 }
@@ -197,7 +188,9 @@ export default function StackNavigator () {
             <Stack.Screen name="Welcome" component={WelcomeScreen} options={ navOptionHandle } />
             <Stack.Screen name="Login" component={LoginScreen} options={ navOptionHandle } />
             <Stack.Screen name="Home" component={BottomTagNavigator} options={ navOptionHandle } />
+            <Stack.Screen name="TeacherHome" component={DrawerNavigatorTeacher} options={ navOptionHandle } />
             <Stack.Screen name="ScanQR" component={ScanScreen} options={ navOptionHandle }/>
+            <Stack.Screen name="ScanQRTeacher" component={ScanForTeacherScreen} options={ navOptionHandle }/>
             <Stack.Screen name="MessageList" component={MessageListScreen} options={ navOptionHandle }/>
             <Stack.Screen name="Attendence" component={AttendenceScreen} options={ navOptionHandle } />
             <Stack.Screen name="OutBus" component={OutBusScreen} options={ navOptionHandle }/>
@@ -212,6 +205,10 @@ export default function StackNavigator () {
             <Stack.Screen name="Schedule" component={ScheduleScreen} options={ navOptionHandle } />
             <Stack.Screen name="History" component={HistoryScreen} options={ navOptionHandle } />
             <Stack.Screen name="GpsFollow" component={GpsFollowScreen} options={ navOptionHandle } />
+            <Stack.Screen name="ChatListForParents" component={ChatListForParentsScreen} options={ navOptionHandle } />
+            <Stack.Screen name="ViewFullTeacherSchedule" component={ViewFullTeacherScheduleScreen} options={ navOptionHandle } />
+            <Stack.Screen name="AttendanceForTeacher" component={AttendanceForTeacherScreen} options={ navOptionHandle } />
+            
             {/* <Stack.Screen name="ReasonAbsence" component={ReasonAbsence} options={ navOptionHandle }/> */}
         </Stack.Navigator>
     </NavigationContainer>

@@ -14,10 +14,15 @@ import axios from 'axios';
 import host from '../assets/host';
 
 import Logo from '../assets/images/Kids-Reading.jpg'
+import Logo2 from '../assets/images/go-to-school-by-bus-logo.png'
+
 import ImageBackgroundLogin from "../assets/images/background-login.jpg"
 
+
 import { useDispatch } from 'react-redux';
-import { addUser } from '../actions/userAction';
+import { addUser } from '../actions/userAction'
+import { addInfo } from '../actions/followAction'
+import { addDestination } from '../actions/destinationAction'
 
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -26,8 +31,6 @@ Notifications.setNotificationHandler({
       shouldSetBadge: false,
     }),
 });
-
-
 
 
 
@@ -101,6 +104,53 @@ const Login = ({ navigation, route }) => {
         })
     }
     
+    const addStudentList = async (id) => {
+        const isSchedule = await axios.post(`${host}/supervisorschedule/showdestination`, { id: id})
+        const initialSchedule = {
+          date: new Date(),
+            process: {
+                "destination": 0,
+                "status": false,
+              },
+            status: {
+                "getOnBus": false,
+                "getOutBus": false,
+            },
+        }   
+        if(Object.entries(isSchedule.data).length != 0) {
+          const findDate = (new Date(isSchedule.data.date)).getDate() + '/' + (new Date(isSchedule.data.date)).getMonth();
+          const today = new Date().getDate() + '/' + new Date().getMonth();
+          if(findDate === today) {
+            dispatch(addDestination(isSchedule.data))
+          } else {
+            dispatch(addDestination(initialSchedule))
+          }
+        }  else {
+          dispatch(addDestination(initialSchedule))
+        }   
+        
+    
+        const isList = await axios.post(`${host}/registerbus/showAllList`)
+        const dateNow = new Date(isSchedule.data.date).getDate()+"/"+new Date(isSchedule.data.date).getMonth()
+        
+        isList.data.map(value => {
+            value.listBookStation.map(value2 => {
+                const getDate = (new Date(value2.date)).getDate()+'/'+(new Date(value2.date)).getMonth()
+                if(getDate === dateNow) {
+                    axios.post(`${host}/student/getStudentByParentsId`, {id: value.parentsId})
+                    .then(res => {
+                      const studentInfo = {
+                        valueparentsId: value.parentsId,
+                        student: res.data,
+                        station: value2
+                      };
+                      dispatch(addInfo(studentInfo))
+                    })
+                }    
+            })
+        })
+    }
+
     const _storeData = async (token, userName, permission) => {
         try {
             setLoading(true);
@@ -116,16 +166,24 @@ const Login = ({ navigation, route }) => {
             }
 
             
-            if(permission === 'teacher') { // handle login Teacher
+            if(permission === 'supervisor') {
+                const timer = setInterval(async () => {
+                    const user = await axios.post(`${host}/teacher/getUserFromToken`, { token, permission: 'supervisor' })
+                    dispatch(addUser(user.data))
+                    addStudentList(user.data._id)
+                    navigation.replace('Home')
+                    clearInterval(timer) 
+                }, 2000);
+            }
+            else if(permission === 'teacher') { // handle login Teacher
                 const timer = setInterval(async () => {
                     const user = await axios.post(`${host}/teacher/getUserFromToken`, { token, permission: 'teacher' })
                     dispatch(addUser(user.data))
-                    navigation.replace('Home')
+                    navigation.replace('TeacherHome')
                     clearInterval(timer) 
                 }, 2000);
             } else {
                 const timer = setInterval( async () => { // handle login User
-                   
                     const user = await axios.post(`${host}/users/getUserFromToken`, { token, permission: 'user' })
                     dispatch(addUser(user.data))
                     navigation.replace('Home')
@@ -147,8 +205,9 @@ const Login = ({ navigation, route }) => {
    
         await axios.post(`${host}/teacher/login`, user )
         .then(resTeacher => {
-            const { token, error } = resTeacher.data
+            const { teacher, token, error } = resTeacher.data
             if(error) {
+                console.log('abc');
                 axios.post(`${host}/users/login`, user )
                 .then(resUser => {
                     const { token, error } = resUser.data
@@ -160,11 +219,11 @@ const Login = ({ navigation, route }) => {
                         password: '',
                     })
                     }else {
-                         _storeData(token, data.userName, 'user')    
+                        _storeData(token, data.userName, 'user')    
                     }
                 })
             } else {
-                _storeData(token, data.userName, 'teacher')
+                _storeData(token, data.userName, teacher.permission)
             }
         })
     }

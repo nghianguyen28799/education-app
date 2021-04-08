@@ -138,7 +138,7 @@ export default function ScanScreen({ navigation, route }) {
             <View style={{ backgroundColor: '#fff', width: width-30, zIndex: 999999, borderRadius: 10 }}>
                 <View style={{ justifyContent: 'center', alignItems: 'center' }}>
                     <Text style={{ padding: 10, fontSize: 18, textTransform: 'uppercase', fontWeight: 'bold', color: '#1C81DF' }}>
-                      {route.params.type === "OnBus" ? "Lên xe" : "Xuống xe" }
+                      Điểm danh
                     </Text>
                 </View>
                 <LinearGradient 
@@ -150,9 +150,7 @@ export default function ScanScreen({ navigation, route }) {
                   >
                     <Text style={{ color: '#6D2EF3', fontWeight: 'bold', fontSize: 15  }}>Thẻ học sinh</Text>
                 </LinearGradient>
-                {/* <View style={{ backgroundColor: '#2980B9', justifyContent: 'center', alignItems: 'center', padding: 10 }}>
-                    <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15f  }}>Thẻ học sinh</Text>
-                </View> */}
+    
                 <View style={{ padding: 15 }}>
                   <View style={{ width: '100%', flexDirection: 'row' }}>
                     <View style={{ width: 88, height: 120, borderWidth: 1, }}>
@@ -163,21 +161,27 @@ export default function ScanScreen({ navigation, route }) {
                       <View style={{ borderBottomWidth: 1, borderBottomColor: '#839192', marginBottom: 5 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3}}>
                           <Text style={{ color: '#839192', fontSize: 13 }}>Họ và tên: </Text>
-                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>{ studentData ? studentData.name : null }</Text>
+                            <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>
+                                { studentData ? studentData.name : null }
+                            </Text>
                         </View>
                       </View>
 
                       <View style={{ borderBottomWidth: 1, borderBottomColor: '#839192', marginBottom: 5 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3}}>
                           <Text style={{ color: '#839192', fontSize: 13 }}>Giới tính: </Text>
-                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>{ !studentData ? null : studentData.gender === "Male" ? "Nam" : "Nữ."  }</Text>
+                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>
+                              { !studentData ? null : studentData.gender === "Male" ? "Nam" : "Nữ."  }
+                            </Text>
                         </View>
                       </View>
 
                       <View style={{ borderBottomWidth: 1, borderBottomColor: '#839192', marginBottom: 5 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3}}>
                           <Text style={{ color: '#839192', fontSize: 13 }}>Lớp: </Text>
-                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>Lớp: { classData ? classData.ClassCode : null }</Text>
+                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>Lớp: 
+                            { classData ? classData.ClassCode : null }
+                          </Text>
                         </View>
                       </View>
 
@@ -193,47 +197,7 @@ export default function ScanScreen({ navigation, route }) {
                     </View>
                   </View>    
                 </View>
-                
-                <View style={{ justifyContent: 'center', paddingHorizontal: 10 }}>
-                    <Text style={{ color: '#2980B9', fontWeight: 'bold', fontSize: 18  }}>Thông tin người đón</Text>
-                </View>
-                <View style={{ padding: 15 }}>
-                  <View style={{ width: '100%', flexDirection: 'row' }}>
-                    <View style={{ width: '30%', height: 120, borderWidth: 1, }}>
-                            {/* Image */}
-                    </View>
-                    <View style={{ width: '70%', paddingLeft: 15 }}>
-                     
-                      <View style={{ borderBottomWidth: 1, borderBottomColor: '#839192', marginBottom: 5 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3}}>
-                          <Text style={{ color: '#839192', fontSize: 13 }}>Họ và tên: </Text>
-                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>
-                              {/* Ho ten */}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <View style={{ borderBottomWidth: 1, borderBottomColor: '#839192', marginBottom: 5 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3}}>
-                          <Text style={{ color: '#839192', fontSize: 13 }}>Giới tính: </Text>
-                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>
-                              {/* Gioi tinh */}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <View style={{ borderBottomWidth: 1, borderBottomColor: '#839192', marginBottom: 5 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3}}>
-                          <Text style={{ color: '#839192', fontSize: 13 }}>Mối quan hệ: </Text>
-                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>
-                              {/* MQH */}
-                          </Text>
-                        </View>
-                      </View>
-
-                    </View>
-                  </View>    
-                </View>
+              
                 <View>
                   <View style={{ flexDirection: 'row', margin: 15 }}>
                     <TouchableOpacity
@@ -370,7 +334,7 @@ export default function ScanScreen({ navigation, route }) {
         </TouchableOpacity>
             
           <View style={styles.titleHeader}>
-              <Text style={styles.titleHeader_text}>Check Out Mã QR</Text>
+              <Text style={styles.titleHeader_text}>QR Điểm Danh</Text>
           </View>
             
         <TouchableOpacity

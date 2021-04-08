@@ -21,9 +21,10 @@ import host from '../assets/host';
 
 function CustomDrawer({navigation, progress, ...props}) {
     const dispatch = useDispatch();
-    const user = useSelector(state => state.userReducer)
-    const permission = React.useRef(user.data.permission);
-    
+    const user = useSelector(state => state.userReducer.data)
+    const [isPermission, setPermission] = React.useState('');
+    // const permission = React.useRef(user.permission);
+
     const getAttendanceScreen = {
         title: 'Điểm danh',
         status: 1,
@@ -36,13 +37,23 @@ function CustomDrawer({navigation, progress, ...props}) {
         outputRange: [-100, 0]
     })
 
+    const getData = async() => {
+        const valuePermission = await AsyncStorage.getItem('permission')
+        setPermission(valuePermission)
+        // console.log(valuePermission);
+    }
+
+    React.useEffect(() => {
+        getData()
+    },[])
+
     const handleSignOut = async () => {
         const getUserNameMemo = await AsyncStorage.getItem('userNameMemo');
         const getSelected= await AsyncStorage.getItem('isSelected');
         const getPermission = await AsyncStorage.getItem('permission');
         const token = await AsyncStorage.getItem('token');
-        if(getPermission === 'teacher') {
-            console.log('logout');
+        if(getPermission === 'teacher' || getPermission === 'supervisor') {
+            axios.post(`${host}/teacher/logout`, {token: token, permission: getPermission})
         }
         else {
             axios.post(`${host}/users/logout`, {token: token, permission: 'user'})
@@ -57,8 +68,157 @@ function CustomDrawer({navigation, progress, ...props}) {
         });
     }
 
+    if(isPermission === 'supervisor' && user) {
+        return (    // Nguoi giam sat
+            <View >
+                <View style={{ flex: 0, height: "3%",}}>
+    
+                </View>
+                <View 
+                    style={{ 
+                        flex: 0,
+                        height: "12%",
+                        backgroundColor: '#fff'
+                    }}>
+                        <View style={{ flexDirection: 'row', flex: 1 }}>
+                            <View style={{ flex: 1/4, justifyContent: 'center', alignItems: 'center' }}>
+                                <View style={{ width: 60, height: 60, borderRadius: 15 }}>
+                                    {
+                                        user.Avatar
+                                        ? <Image source={{ uri: `${host}/${user.Avatar}`}} style={{width: 60, height: 60, borderRadius: 50}} />
+                                        : <Image source={ UserCirle } style={{width: 60, height: 60}} />
+                                    }
+                                    
+                                </View>
+                            </View>
+                            <View style={{ flex: 3/4, justifyContent: 'center', paddingLeft: 5}}>
+                                <Text style={{ fontWeight: 'bold', color: '#000' }}>{user.FullName}</Text>
+                                <View style={{ height: 5 }}></View>
+                                    <Text style={{ color: '#717D7E', fontSize: 12 }}>Giáo viên đưa đón </Text>   
+                             </View>
+                        </View>
+                </View>
+                
+                <View 
+                    style={{ 
+                        flex: 0, 
+                        height: "72%",
+                
+                    }}>
+                    <DrawerContentScrollView {...props}>
+                        <Animated.View style={{ transform: [{translateX}]}}>
+                            <DrawerItem 
+                                label="Hồ sơ" 
+                                icon={({icon, size}) => <FontAwesome name="user" color="#057aae" size={18} />}
+                                onPress={() => navigation.navigate("Profile")}
+                            />
 
-    if(permission.current === 'teacher' || permission.current === 'supervisor') {
+                            <DrawerItem 
+                                label="Đổi mật khẩu" 
+                                icon={({icon, size}) => <FontAwesome5 name="lock" color="#057aae" size={18} />}
+                                onPress={() => navigation.navigate("ChangePassword")}
+                            />
+    
+                        </Animated.View>
+                    </DrawerContentScrollView>
+                </View>
+    
+                <View style= {{
+                    flex: 0,
+                    height: "10%",
+                }}>
+                   <DrawerContentScrollView {...props}>
+                        <Animated.View style={{ transform: [{translateX}]}}>
+                            <DrawerItem 
+                                label="Đăng xuất" 
+                                icon={() => <MaterialIcons name="logout" size={24} color="#057aae" />}
+                                onPress={handleSignOut}
+                            />  
+                        </Animated.View>
+                    </DrawerContentScrollView>
+                </View>
+            </View>
+        )
+    } else if (isPermission === 'user' && user ) {    // Phu huynh
+        return (
+            <View >
+                <View style={{ flex: 0, height: "3%",}} />
+
+                <View 
+                    style={{ 
+                        flex: 0,
+                        height: "12%",
+                        backgroundColor: '#fff'
+                    }}>
+                        <View style={{ flexDirection: 'row', flex: 1 }}>
+                            <View style={{ flex: 1/4, justifyContent: 'center', alignItems: 'center' }}>
+                                <View style={{ width: 60, height: 60, borderRadius: 40 }}>
+                                {
+                                        user.Avatar
+                                        ? <Image source={{ uri: `${host}/${user.Avatar}` }} style={{width: 60, height: 60, borderRadius: 50}} />
+                                        : <Image source={ UserCirle } style={{width: 60, height: 60}} />
+                                    }
+    
+                                </View>
+                            </View>
+                            <View style={{ flex: 3/4, justifyContent: 'center', paddingLeft: 5}}>
+                                <Text style={{ fontWeight: 'bold', color: '#000' }}>{user.FullName}</Text>
+                                <View style={{ height: 5 }}></View>
+
+                                   <Text style={{ color: '#717D7E', fontSize: 12 }}>Phụ huynh</Text>
+                                
+                             </View>
+                        </View>
+    
+                </View>
+                
+                <View 
+                    style={{ 
+                        flex: 0, 
+                        height: "72%",
+                
+                    }}>
+                    <DrawerContentScrollView {...props}>
+                        <Animated.View style={{ transform: [{translateX}]}}>
+                            <DrawerItem 
+                                label="Hồ sơ cá nhân" 
+                                icon={({icon, size}) => <AntDesign name="profile" color="#057aae" size={18} />}                                onPress={() => navigation.navigate("Profile")}
+                            />
+
+                            <DrawerItem 
+                                label="Hồ sơ GVCN" 
+                                icon={({icon, size}) => <FontAwesome name="list-alt" color="#057aae" size={18} />}
+                                onPress={() => navigation.navigate("ViewProfileTeacher")}
+                            />
+    
+    
+                            <DrawerItem 
+                                label="Đổi mật khẩu" 
+                                icon={({icon, size}) => <FontAwesome5 name="lock" color="#057aae" size={18} />}
+                                onPress={() => navigation.navigate("ChangePassword")}
+                            />
+    
+                        </Animated.View>
+                    </DrawerContentScrollView>
+                </View>
+    
+                <View style= {{
+                    flex: 0,
+                    height: "10%",
+                }}>
+                   <DrawerContentScrollView {...props}>
+                        <Animated.View style={{ transform: [{translateX}]}}>
+                            <DrawerItem 
+                                label="Đăng xuất" 
+                                icon={() => <MaterialIcons name="logout" size={24} color="#057aae" />}
+                                onPress={handleSignOut}
+                            />  
+                        </Animated.View>
+                    </DrawerContentScrollView>
+                </View>
+            </View>
+        )
+    } else if(isPermission === 'teacher' && user ) {
         return (    // Giao vien
             <View >
                 <View style={{ flex: 0, height: "3%",}}>
@@ -74,21 +234,17 @@ function CustomDrawer({navigation, progress, ...props}) {
                             <View style={{ flex: 1/4, justifyContent: 'center', alignItems: 'center' }}>
                                 <View style={{ width: 60, height: 60, borderRadius: 15 }}>
                                     {
-                                        user.data.Avatar
-                                        ? <Image source={{ uri: `${host}/${user.data.Avatar}`}} style={{width: 60, height: 60, borderRadius: 50}} />
+                                        user
+                                        ? <Image source={{ uri: `${host}/${user.Avatar}`}} style={{width: 60, height: 60, borderRadius: 50}} />
                                         : <Image source={ UserCirle } style={{width: 60, height: 60}} />
                                     }
                                     
                                 </View>
                             </View>
                             <View style={{ flex: 3/4, justifyContent: 'center', paddingLeft: 5}}>
-                                <Text style={{ fontWeight: 'bold', color: '#000' }}>{user.data.FullName}</Text>
+                                <Text style={{ fontWeight: 'bold', color: '#000' }}>{user.FullName}</Text>
                                 <View style={{ height: 5 }}></View>
-                                {
-                                    user.data.permission === 'teacher'
-                                    ? <Text style={{ color: '#717D7E', fontSize: 12 }}>Giáo viên </Text>
-                                    : <Text style={{ color: '#717D7E', fontSize: 12 }}>Giáo viên đưa đón</Text>
-                                }
+                                    <Text style={{ color: '#717D7E', fontSize: 12 }}>Giáo viên chủ nhiệm</Text>
                              </View>
                         </View>
                 </View>
@@ -117,123 +273,7 @@ function CustomDrawer({navigation, progress, ...props}) {
                                 label="Danh sách lớp" 
                                 icon={({icon, size}) => <FontAwesome name="list-alt" color="#057aae" size={18} />}
                                 onPress={() => navigation.navigate("StudentList")}
-                            />
-    
-                            <DrawerItem 
-                                label="Điểm danh" 
-                                icon={({icon, size}) => <FontAwesome name="calendar" color="#057aae" size={18}/>}
-                                onPress={() => navigation.navigate("Attendence", { page: getAttendanceScreen})}
-                            />  
-    
-                            <DrawerItem 
-                                label="Bản đồ" 
-                                icon={({icon, size}) => <FontAwesome5 name="map-marked-alt" color="#057aae" size={18} />}
-                                onPress={() => navigation.navigate("Attendence", { page: getAttendanceScreen})}
-                            />  
-     
-                            <DrawerItem 
-                                label="Scan QR" 
-                                icon={({icon, size}) => <Ionicons name="scan" color="#057aae" size={18} />}
-                                onPress={() => navigation.navigate("ScanQR")}
-                            />
-    
-                        </Animated.View>
-                    </DrawerContentScrollView>
-                </View>
-    
-                <View style= {{
-                    flex: 0,
-                    height: "10%",
-                }}>
-                   <DrawerContentScrollView {...props}>
-                        <Animated.View style={{ transform: [{translateX}]}}>
-                            <DrawerItem 
-                                label="Đăng xuất" 
-                                icon={() => <MaterialIcons name="logout" size={24} color="#057aae" />}
-                                onPress={handleSignOut}
-                            />  
-                        </Animated.View>
-                    </DrawerContentScrollView>
-                </View>
-            </View>
-        )
-    } else if (permission.current === 'parents') {    // Phu huynh
-        return (
-            <View >
-                <View style={{ flex: 0, height: "3%",}} />
-
-                <View 
-                    style={{ 
-                        flex: 0,
-                        height: "12%",
-                        backgroundColor: '#fff'
-                    }}>
-                        <View style={{ flexDirection: 'row', flex: 1 }}>
-                            <View style={{ flex: 1/4, justifyContent: 'center', alignItems: 'center' }}>
-                                <View style={{ width: 60, height: 60, borderRadius: 40 }}>
-                                {
-                                        user.data.Avatar
-                                        ? <Image source={{ uri: `${host}/${user.data.Avatar}` }} style={{width: 60, height: 60, borderRadius: 50}} />
-                                        : <Image source={ UserCirle } style={{width: 60, height: 60}} />
-                                    }
-    
-                                </View>
-                            </View>
-                            <View style={{ flex: 3/4, justifyContent: 'center', paddingLeft: 5}}>
-                                <Text style={{ fontWeight: 'bold', color: '#000' }}>{user.data.FullName}</Text>
-                                <View style={{ height: 5 }}></View>
-
-                                   <Text style={{ color: '#717D7E', fontSize: 12 }}>Phụ huynh</Text>
-                                
-                             </View>
-                        </View>
-    
-                </View>
-                
-                <View 
-                    style={{ 
-                        flex: 0, 
-                        height: "72%",
-                
-                    }}>
-                    <DrawerContentScrollView {...props}>
-                        <Animated.View style={{ transform: [{translateX}]}}>
-                            <DrawerItem 
-                                label="Hồ sơ cá nhân" 
-                                icon={({icon, size}) => <AntDesign name="profile" color="#057aae" size={18} />}                                onPress={() => navigation.navigate("Profile")}
-                            />
-
-    <                       DrawerItem 
-                                label="Hồ sơ GVCN" 
-                                icon={({icon, size}) => <FontAwesome name="list-alt" color="#057aae" size={18} />}
-                                onPress={() => navigation.navigate("ViewProfileTeacher")}
-                            />
-    
-    
-                            <DrawerItem 
-                                label="Đổi mật khẩu" 
-                                icon={({icon, size}) => <FontAwesome5 name="lock" color="#057aae" size={18} />}
-                                onPress={() => navigation.navigate("ChangePassword")}
-                            />
-
-                            {/* <DrawerItem 
-                                label="Điểm danh" 
-                                icon={({icon, size}) => <FontAwesome name="calendar" color="#057aae" size={18}/>}
-                                onPress={() => navigation.navigate("Attendence", { page: getAttendanceScreen})}
-                            />  
-    
-                            <DrawerItem 
-                                label="Bản đồ" 
-                                icon={({icon, size}) => <FontAwesome5 name="map-marked-alt" color="#057aae" size={18} />}
-                                onPress={() => navigation.navigate("Attendence", { page: getAttendanceScreen})}
-                            />  
-     
-                            <DrawerItem 
-                                label="Scan QR" 
-                                icon={({icon, size}) => <Ionicons name="scan" color="#057aae" size={18} />}
-                                onPress={() => navigation.navigate("ScanQR")}
-                            /> */}
-    
+                            />    
                         </Animated.View>
                     </DrawerContentScrollView>
                 </View>
@@ -255,7 +295,9 @@ function CustomDrawer({navigation, progress, ...props}) {
             </View>
         )
     } else {
-        <View></View>
+        return (
+            <View></View>
+        )
     }
     
 }

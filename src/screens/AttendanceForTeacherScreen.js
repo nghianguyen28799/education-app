@@ -13,9 +13,9 @@ import {
 } from 'react-native'
 
 import axios from 'axios';
-import host from '../../assets/host';
+import host from '../assets/host';
 import { useDispatch, useSelector } from 'react-redux'
-import { editInfo } from '../../actions/followAction'
+
 // icon store
 import { FontAwesome5 } from '@expo/vector-icons'; 
 import { AntDesign } from '@expo/vector-icons'; 
@@ -26,9 +26,8 @@ import { FontAwesome } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
 
 // close icon store
-import AttendenceScreen from '../../screens/AttendenceScreen';
-import MaleNoneAvatar from '../../assets/images/male-none-avatar.png'
-import FemaleNoneAvatar from '../../assets/images/female-none-avatar.png'
+// import MaleNoneAvatar from '../assets/images/male-none-avatar.png'
+// import FemaleNoneAvatar from '../assets/images/female-none-avatar.png'
 const window = Dimensions.get("window");
 const screen = Dimensions.get("screen");
 
@@ -50,9 +49,21 @@ const lesson = [
     {id: '8abc', serial: 8, start: '03:25', end: '04:00', session: 'PM'}
 ]
 
+const weekdayData = [
+    { id: '1aaa', serial: 1, code: 'T2'},
+    { id: '2aaa', serial: 2, code: 'T3'},
+    { id: '3aaa', serial: 3, code: 'T4'},
+    { id: '4aaa', serial: 4, code: 'T5'},
+    { id: '5aaa', serial: 5, code: 'T6'},
+    { id: '6aaa', serial: 6, code: 'T7'},
+    { id: '7aaa', serial: 0, code: 'CN'},
+]
+
 const TeacherHomePage = ({ navigation, route }) => {
     const dispatch = useDispatch();
     const user = useSelector(state => state.userReducer.data)
+    const studentList = useSelector(state => state.attendanceListReducer.infoStudentList)
+
     var d = new Date();
     var month = new Array();
     month[0] = "January";
@@ -69,20 +80,21 @@ const TeacherHomePage = ({ navigation, route }) => {
     month[11] = "December";
     var n = month[d.getMonth()];
 
+    var weekday = new Array(7);
+    weekday[0] = "sunday";
+    weekday[1] = "monday";
+    weekday[2] = "tuesday";
+    weekday[3] = "wednesday";
+    weekday[4] = "thurday";
+    weekday[5] = "friday";
+    weekday[6] = "saturday";
+
+    const getDay = weekday[d.getDay()];
     const [subject, setSubject] = React.useState([]);
+    const [isDay, setDay] = React.useState(new Date().getDay())
+    const [isDate, setDate] = React.useState([])
 
-    const getData = async() => {
-        var day = new Date();
-        var weekday = new Array(7);
-        weekday[0] = "sunday";
-        weekday[1] = "monday";
-        weekday[2] = "tuesday";
-        weekday[3] = "wednesday";
-        weekday[4] = "thurday";
-        weekday[5] = "friday";
-        weekday[6] = "saturday";
-
-        var getDay = weekday[day.getDay()];
+    const getData = async () => {
         const classCode = user.ClassCode;
         const isSchedule = await axios.post(`${host}/schedule/show`, { classCode: classCode })
         const dayList = isSchedule.data.DayList
@@ -94,10 +106,37 @@ const TeacherHomePage = ({ navigation, route }) => {
         }
     }
 
+    const getMonday = (d) => {
+        d = new Date(d);
+        var day = d.getDay(),
+            diff = d.getDate() - day + (day == 0 ? -6:1); // adjust when day is sunday
+        const dateArr = [];
+        for(let i=0 ; i<7 ; i++) {
+            dateArr.push(new Date(d.setDate(diff)).getDate() + i)
+        }
+        setDate(dateArr);
+      }
+
     React.useEffect(() => {
         getData()
-    },[])
-    
+        getMonday(new Date())
+    },[]);
+
+    const handleChangeDay = async (valueDay) => {
+        setDay(valueDay)
+        setSubject([]);
+        const getDay = weekday[valueDay];
+        const classCode = user.ClassCode;
+        const isSchedule = await axios.post(`${host}/schedule/show`, { classCode: classCode })
+        const dayList = isSchedule.data.DayList
+        for (const [key, value] of Object.entries(dayList)) {
+            const getKey = key.slice(0, key.length-1);
+            if(getKey === getDay) {
+                setSubject(previous => [...previous, value])
+            }
+        }
+    }
+
     const renderItem = ({item}) => (
         <View style={styles.body_area_content_area}>
             <View style={styles.body_area_content_left}>
@@ -142,100 +181,50 @@ const TeacherHomePage = ({ navigation, route }) => {
                 <View style={styles.menu_border}>
                     <View style={styles.menu}>
                         <TouchableOpacity
-                            onPress={() => navigation.openDrawer()}
+                            onPress={() => navigation.goBack()}
                         >
                         <View style={styles.goBackHeader}>
-                            <Feather name="menu" size={24} color="#000" />
+                            <Entypo name="chevron-left" size={24} color="black" />
                         </View>
                         </TouchableOpacity>
                     </View>
 
-                    <View style={{ flex: 1 }} />
-                    
-                    <View style={styles.menu}>
-                        <TouchableOpacity
-                            onPress={() => navigation.navigate('AttendanceForTeacher')}
-                        >
-                        <View style={styles.goBackHeader}>
-                            <FontAwesome name="calendar-check-o" size={24} color="black" />
-                        </View>
-                        </TouchableOpacity>
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center'}} >
+                        <Text style={{
+                            fontSize: 17,
+                            fontWeight: 'bold'
+                        }}>Danh sách điểm danh</Text>
                     </View>
 
-                    <View style={styles.menu}>
-                        <TouchableOpacity
-                            onPress={() => navigation.openDrawer()}
-                        >
+                    <View style={[styles.menu, {opacity: 0}]}>
                         <View style={styles.goBackHeader}>
                             <AntDesign name="message1" size={24} color="#000" />
                         </View>
-                        </TouchableOpacity>
                     </View>
                 </View>
 
-                <View style={styles.container_header}>
-                    <View style={styles.container_header_left}>
-                        <View style={styles.container_header_info_area}>
-                            <View style={styles.container_header_avt}>
-                                {/* <Image source={{uri: `${host}/${user.Avatar}`}}/> */}
-                            </View>
-                            <Text style={{ fontSize: 20, fontWeight: 'bold'}}>Hi! Thầy Phúc</Text>
+                <View style={styles.container_box}>
+                    <View style={styles.container_header_box}>
+                        <View style={styles.container_header_left}>
+                            <Entypo name="calendar" size={30} color="black" style={{ marginRight: 10}}/>
+                            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#5F6A6A' }}>8</Text>
+                            <Text style={{ fontSize: 20, fontWeight: 'bold', marginHorizontal: 5, color: '#000' }}>{n}</Text>
+                            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#5F6A6A' }}>2021</Text>
                         </View>
-                        <View style={styles.container_header_intro_area}>
-                            <Text style={{ color: '#4D5656', fontSize: 12 }}>Muốn biết phải hỏi, muốn giỏi phải học</Text>
-                            <Text style={{ color: '#4D5656', fontSize: 12 }}>Có học mới biết, có đi mới đến.</Text>
+                        <View style={styles.container_header_right}>
+                            <Text style={{ fontSize: 13, fontWeight: 'bold' }}>{isDay === new Date().getDay() ? 'Hôm nay' : ''}</Text>
                         </View>
                     </View>
 
-                    <View style={styles.container_header_right}>
-                        <View style={{alignItems: 'center', paddingTop: 10}}>
-                            <Text style={{ textAlign: 'center', fontSize: 12, fontWeight: 'bold', color: '#4D5656'}}>
-                                Thứ {d.getDay()+1}
-                            </Text>
-                            <Text style={{ textAlign: 'center', fontSize: 13, fontWeight: 'bold' }}>{d.getDate()} {n}</Text>
-                            
-                        </View>
-                        {/* <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center' }}>
-                            <TouchableOpacity>
-                                <View style={styles.qrcode}>
-                                    <AntDesign name="qrcode" size={24} color="black" />
-                                </View>
-                            </TouchableOpacity>
-                        </View> */}
+                    <View style={styles.container_body_box}>
+                        
                     </View>
                 </View>
             </View>
             <View style={styles.body}>
-                <View style={styles.body_area_absolute}>
-                    <View style={styles.body_area_absolute_left} />
-                    <View style={styles.body_area_absolute_right} />
-                </View>
-                
+                <View style={styles.body_area_absolute} />
+        
                 <View style={styles.body_area}>
-                    <View style={styles.body_area_header_area}>
-                        <View style={styles.body_area_header_area_left} />
-                        <View style={styles.body_area_header_area_right}>
-                            <TouchableOpacity
-                                onPress={() => navigation.navigate('ViewFullTeacherSchedule')}
-                            >
-                                <Text style={{
-                                    textDecorationLine: 'underline',
-                                    color: '#979A9A',
-                                    fontSize: 13,
-                                    padding: 10
-                                }}>
-                                    See all
-                                </Text>
-                            </TouchableOpacity>
-                            <View style={{ flex: 1 }}/>
-                            <Text style={{
-                                textTransform: "uppercase",
-                                fontWeight: 'bold', 
-                            }}>
-                                lịch giảng dạy
-                            </Text>
-                        </View>
-                    </View>
                     {
                         subject.length >= 8
                         ?
@@ -260,7 +249,7 @@ const styles = StyleSheet.create({
     },
 
     header: {
-        height: height*22/100,
+        height: height*28/100,
         paddingHorizontal: 20,
     },
 
@@ -274,60 +263,59 @@ const styles = StyleSheet.create({
         padding: 10,
     },
 
-    container_header: {
+    container_box: {
         flex: 1,
-        flexDirection: 'row',
+    },
+    
+    container_header_box: {
+        height: "30%",
+        flexDirection: 'row', 
     },
 
     container_header_left: {
-        width: '80%',
+        flex: 3/4, 
+        alignItems: 'center',
+        flexDirection: 'row'
     },
 
     container_header_right: {
-        width: '20%',
-        paddingBottom: 15
+        flex: 1/4,
+        alignItems: 'flex-end',
+        justifyContent: 'center'
     },
 
-    container_header_info_area: {
-        height: 50,
+    container_body_box: {
+        height: "70%",
         flexDirection: 'row',
+
+        justifyContent: 'center',
         alignItems: 'center'
     },
 
-    container_header_avt: {
-        width: 50,
-        height: 50,
-        borderRadius: 15,
-        borderWidth: 1,
-        marginRight: 10
+    each_date_box: {
+        height: '60%',
+        flex: 1/7,
+        paddingHorizontal: 2
     },
 
-    container_header_intro_area: {
-        marginLeft: 60,
-        height: 60,
-        marginTop: 10
+    each_date: {
+        flex: 1,
+        borderRadius: 30,
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center'
     },
 
-    // qrcode: {
-    //     width: 40, 
-    //     height: 40, 
-    //     backgroundColor: '#ECF0F1', 
-    //     borderRadius: 10, 
-    //     justifyContent: 'center', 
-    //     alignItems: 'center',
-    //     shadowColor: "#000",
-    //     shadowOffset: {
-    //         width: 0,
-    //         height: 2,
-    //     },
-    //     shadowOpacity: 0.25,
-    //     shadowRadius: 3.84,
-        
-    //     elevation: 5,
-    // },
+    each_date_selected: {
+        backgroundColor: '#212F3C',
+        flex: 1,
+        borderRadius: 30,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
 
     body: {
-        height: height*75/100,
+        height: height*72/100,
     },
 
     body_area_absolute: {
@@ -335,42 +323,17 @@ const styles = StyleSheet.create({
         height: '100%',
         position: 'absolute',
         flexDirection: 'row',
-    },
-
-    body_area_absolute_left: {
-        width: '22%',
-        height: '100%',
-    },
-
-    body_area_absolute_right: {
-        width: '78%',
-        height: '100%',
         backgroundColor: '#fff',
-        borderTopLeftRadius: 40
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
     },
 
     body_area: {
         flex: 1,
         // backgroundColor: '#fff'
+        paddingVertical: 30
     },
 
-    body_area_header_area: {
-        height: 70,
-        flexDirection: 'row',
-    },
-
-    body_area_header_area_left: {
-        width: '22%',
-        height: '100%',
-    },
-
-    body_area_header_area_right: {
-        width: '78%',
-        height: '100%',
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 20
-    },
 
     body_area_content_area: {
         height: 120,
@@ -382,7 +345,7 @@ const styles = StyleSheet.create({
     body_area_content_left: {
         width: '22%',
         height: '100%',
-        // paddingLeft: 20
+        paddingLeft: 20
     },
 
     body_area_content_left_child: {

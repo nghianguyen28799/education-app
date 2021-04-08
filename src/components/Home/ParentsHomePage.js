@@ -97,7 +97,7 @@ const TeacherHomePage = ({navigation}) => {
                         </TouchableOpacity>
                         <TouchableOpacity 
                             style={styles.each_category_space}
-                            onPress={() => navigation.navigate("Message")}
+                            onPress={() => navigation.navigate("ChatListForParents")}
                         >
                             <View style={styles.each_category}>
                                 <View style={styles.icon_category_border}>

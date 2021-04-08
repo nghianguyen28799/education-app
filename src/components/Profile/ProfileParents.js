@@ -330,7 +330,9 @@ const ProfileParentsScreen = ({ navigation }) => {
     )
    
     return (
-        <ScrollView>
+        <ScrollView
+            showsVerticalScrollIndicator={false}
+        >
             <View style={styles.container}>
                 <StatusBar backgroundColor="#fff" barStyle="dark-content" />
                 <View style={{ width: '100%', height: '100%', position: 'absolute' }}>

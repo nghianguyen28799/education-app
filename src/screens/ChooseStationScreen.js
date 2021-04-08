@@ -7,7 +7,8 @@ import {
     TouchableOpacity,
     Image,
     ScrollView,
-    SafeAreaView
+    SafeAreaView,
+    Alert
 } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient';
 import RNPickerSelect from 'react-native-picker-select';
@@ -30,9 +31,9 @@ const ChooseStation = ({ navigation }) => {
     const [ stationSelected, setStationSelected ] = React.useState([]);
 
     const getData = async () => {
-        for (let i = 0; i < 7; i++) {
+        for (let i = 0; i <= 7; i++) {
             const date = new Date()
-            date.setDate(date.getDate() + i+1)
+            date.setDate(date.getDate() + i)
             setDateList(dateList => [...dateList, { id: `date${i}`, date: date }])
         }
         const today = new Date()
@@ -40,7 +41,7 @@ const ChooseStation = ({ navigation }) => {
         const dataList = await axios.post(`${host}/registerBus/show`, {id})
         if(dataList.data.listBookStation){
             dataList.data.listBookStation.map(value => {
-                if(today.getDate() < (new Date(value.date)).getDate() && today.getMonth() <= (new Date(value.date)).getMonth()) {
+                if(today.getDate() <= (new Date(value.date)).getDate() && today.getMonth() <= (new Date(value.date)).getMonth()) {
                     setDateSelected(dateSelected => [...dateSelected, new Date(value.date).getDate()+"/"+ new Date(value.date).getMonth()])
                     setStationSelected(stationSelected  => [...stationSelected, {
                         date: new Date(value.date),
@@ -82,7 +83,37 @@ const ChooseStation = ({ navigation }) => {
     }
 
     const renderItem = ({ item }) => (
-        (item.date.getDay() === 0 || item.date.getDay() === 6) 
+        (new Date(item.date)).getDate() === new Date().getDate()
+        ?
+        <View style={{
+            width: 100,
+            padding: 5,
+            marginHorizontal: 5,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: '#9e9e9e',
+            borderRadius: 10
+        }}>
+            <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#fff' }}>
+                { item.date.getDate() + '-' + (Number(item.date.getMonth())+1) }    
+            </Text>
+            <Text style={{ fontSize: 12, color: '#fff' }}>
+                {
+                    item.date.getDay() === 1
+                    ? "Thứ 2"
+                    : item.date.getDay() === 2
+                    ? "Thứ 3"
+                    : item.date.getDay() === 3
+                    ? "Thứ 4"
+                    : item.date.getDay() === 4
+                    ? "Thứ 5"
+                    : item.date.getDay() === 5
+                    ? "Thứ 6"
+                    : null
+                }
+            </Text>
+        </View>
+        : (item.date.getDay() === 0 || item.date.getDay() === 6) 
         ?
         <View style={[styles.each_date, {borderColor: '#B3B6B7'}]}>
             <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#B3B6B7' }}>
@@ -155,32 +186,65 @@ const ChooseStation = ({ navigation }) => {
     );
 
     const renderChooseStation = ({ item }) => (
-    <View style={styles.get_station_on_row}>
-        <Text style={{ marginRight: 15 }}>
-            {
-                item.date.getDay() === 1
-                ? "Thứ 2"
-                : item.date.getDay() === 2
-                ? "Thứ 3"
-                : item.date.getDay() === 3
-                ? "Thứ 4"
-                : item.date.getDay() === 4
-                ? "Thứ 5"
-                : item.date.getDay() === 5
-                ? "Thứ 6"
-                : null
-            }
-            {" " + item.date.getDate()}-{item.date.getMonth()+1}:
-        </Text>
-        <View style={styles.select_station_border}>
-            <RNPickerSelect
-                onValueChange={(value) => onChangeStation(item, value)}
-                value={item.station}
-                
-                items={stationData !== [] ? stationData : []}
-            />
-        </View>
-    </View>
+    <>
+        {
+            (new Date(item.date)).getDate() === new Date().getDate()
+            ?
+            <View style={styles.get_station_on_row}>
+                <Text style={{ marginRight: 15 }}>
+                    {
+                        item.date.getDay() === 1
+                        ? "Thứ 2"
+                        : item.date.getDay() === 2
+                        ? "Thứ 3"
+                        : item.date.getDay() === 3
+                        ? "Thứ 4"
+                        : item.date.getDay() === 4
+                        ? "Thứ 5"
+                        : item.date.getDay() === 5
+                        ? "Thứ 6"
+                        : null
+                    }
+                    {" " + item.date.getDate()}-{item.date.getMonth()+1}:
+                </Text>
+                <View style={styles.select_station_border}>
+                    <RNPickerSelect
+                        onValueChange={(value) => onChangeStation(item, value)}
+                        value={item.station}
+                        disabled={true}
+                        items={stationData !== [] ? stationData : []}
+                    />
+                </View>
+            </View>
+            :
+            <View style={styles.get_station_on_row}>
+                <Text style={{ marginRight: 15 }}>
+                    {
+                        item.date.getDay() === 1
+                        ? "Thứ 2"
+                        : item.date.getDay() === 2
+                        ? "Thứ 3"
+                        : item.date.getDay() === 3
+                        ? "Thứ 4"
+                        : item.date.getDay() === 4
+                        ? "Thứ 5"
+                        : item.date.getDay() === 5
+                        ? "Thứ 6"
+                        : null
+                    }
+                    {" " + item.date.getDate()}-{item.date.getMonth()+1}:
+                </Text>
+                <View style={styles.select_station_border}>
+                    <RNPickerSelect
+                        onValueChange={(value) => onChangeStation(item, value)}
+                        value={item.station}
+                        items={stationData !== [] ? stationData : []}
+                    />
+                </View>
+            </View>
+        }
+    </>
+    
     )
 
     const onChangeStation = (item, value) => {
@@ -209,6 +273,7 @@ const ChooseStation = ({ navigation }) => {
         const listBookRegister = stationSelected;
         await axios.post(`${host}/registerBus/create`, {id, listBookRegister})
         await axios.post(`${host}/history/create`, { id: user.data._id, event:"Attendence" })
+        Alert.alert("Cập nhật thành công!")
     }
 
     return ( 
@@ -349,7 +414,8 @@ const styles = StyleSheet.create({
         padding: 5,
         marginHorizontal: 5,
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
+        borderRadius: 10
     },
 
     get_station_border: {

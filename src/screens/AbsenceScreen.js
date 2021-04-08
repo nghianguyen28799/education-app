@@ -11,6 +11,7 @@ import {
     TextInput,
     FlatList,
     Dimensions,
+    Alert
 } from 'react-native'
 
 import RNPickerSelect from 'react-native-picker-select';
@@ -259,6 +260,7 @@ const ListStudentScreen = ({ navigation }) => {
         });
         axios.post(`${host}/absence/create`, { id: id, absenceApp: newData, reason: absenceValue })
         axios.post(`${host}/history/create`, { id: user.data._id, event:"Absence" })
+        Alert.alert("Bạn đã gửi yêu cầu xin vắng thành công!")
     }
 
     return (
@@ -347,7 +349,7 @@ const ListStudentScreen = ({ navigation }) => {
                                         <Text style={{
                                         color: "#fff",
                                         }}>
-                                        Nộp đơn xin vắng</Text>
+                                        Gửi yêu cầu</Text>
                                     </View>
                                     </LinearGradient>
                                 </TouchableOpacity>
@@ -449,7 +451,8 @@ const styles = StyleSheet.create({
         padding: 5,
         marginHorizontal: 5,
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
+        borderRadius: 10
     },
 
     select_lesson_border: {
@@ -479,7 +482,8 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         marginHorizontal: 3,
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
+        borderRadius: 5
     },
 
     absence_reason_border: {

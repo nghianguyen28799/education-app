@@ -1,4 +1,4 @@
-import { ADD_FOLLOW, DELETE_FOLLOW, EDIT_FOLLOW, INITIAL_FOLLOW } from '../actions/types';
+import { ADD_ATTENDANCE, DELETE_ATTENDANCE, EDIT_ATTENDANCE, INITIAL_ATTENDANCE} from '../actions/types';
 
 
 const initialState = {
@@ -7,8 +7,7 @@ const initialState = {
 
 const followReducer = (state = initialState, action) => {
     switch (action.type) {
-        case ADD_FOLLOW:
-            // console.log(action);
+        case ADD_ATTENDANCE:
             return {
                 ...state,
                 infoStudentList: state.infoStudentList.concat({
@@ -16,7 +15,7 @@ const followReducer = (state = initialState, action) => {
                     data: action.data
                 })   
             }
-        case DELETE_FOLLOW:
+        case DELETE_ATTENDANCE:
             return {
                 ...state,
                 infoStudentList: state.infoStudentList.filter((item) => 
@@ -24,14 +23,14 @@ const followReducer = (state = initialState, action) => {
                 )  
             }
 
-        case EDIT_FOLLOW:
+        case EDIT_ATTENDANCE:
             return {
                 ...state,
                 infoStudentList: state.infoStudentList
             }
         
-        case INITIAL_FOLLOW:
-            return {
+        case INITIAL_ATTENDANCE:
+            return {    
                 infoStudentList: [],
             }
         default:

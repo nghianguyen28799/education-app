@@ -199,8 +199,8 @@ const ScheduleScreen = ({ navigation }) => {
                     {/* Ăn trưa */}
 
                     <View style={{ flexDirection: 'row' }}>
-                        <View style={styles.lesson_border}><Text style={styles.text_title}>Ăn trưa</Text></View>
-                        <View style={{ height: 30, width: width-((width-30)/6)-30, borderWidth: 1 }} />
+                        {/* <View style={styles.lesson_border}><Text style={styles.text_title}></Text></View> */}
+                        <View style={{ height: 30, width: width-30, borderWidth: 1 }} />
                         {/* <View style={styles.lesson_border}><Text style={styles.text_title}>Thứ 2</Text></View>
                         <View style={styles.lesson_border}><Text style={styles.text_title}>Thứ 3</Text></View>
                         <View style={styles.lesson_border}><Text style={styles.text_title}>Thứ 4</Text></View>
@@ -244,31 +244,20 @@ const ScheduleScreen = ({ navigation }) => {
 
                     {/* Tiết 9 */}
 
-                    <View style={{ flexDirection: 'row' }}>
-                        <View style={styles.lesson_border}><Text style={styles.text_title}>9</Text></View>
-                        <View style={styles.lesson_border}><Text style={styles.text_title}>{data.DayList.monday9}</Text></View>
-                        <View style={styles.lesson_border}><Text style={styles.text_title}>{data.DayList.tuesday9}</Text></View>
-                        <View style={styles.lesson_border}><Text style={styles.text_title}>{data.DayList.wednesday9}</Text></View>
-                        <View style={styles.lesson_border}><Text style={styles.text_title}>{data.DayList.thurday9}</Text></View>
-                        <View style={styles.lesson_border}><Text style={styles.text_title}>{data.DayList.friday9}</Text></View>
-                    </View>
-
                     {/* Thời gian */}
                     
                     <View style={{ marginVertical: 15 }}>
                         <Text style={{ fontSize: 16, fontWeight: 'bold' }}>Thời gian</Text>
                     </View>
                     <View>
-                        <Text>Tiết 1: 7h15</Text>
-                        <Text>Tiết 2: 7h15</Text>
-                        <Text>Tiết 3: 7h15</Text>
-                        <Text>Tiết 3: 7h15</Text>
-                        <Text>Tiết 4: 7h15</Text>
-                        <Text>Tiết 5: 7h15</Text>
-                        <Text>Tiết 6: 7h15</Text>
-                        <Text>Tiết 7: 7h15</Text>
-                        <Text>Tiết 8: 7h15</Text>
-                        <Text>Tiết 9: 7h15</Text>
+                        <Text>Tiết 1: 7:20 - 7:55</Text>
+                        <Text>Tiết 2: 8:00 - 8:35</Text>
+                        <Text>Tiết 3: 9:00 - 9:35</Text>
+                        <Text>Tiết 4: 9:40 - 10:15</Text>
+                        <Text>Tiết 5: 10:25 - 11:00</Text>
+                        <Text>Tiết 6: 13:45 - 14:20</Text>
+                        <Text>Tiết 7: 14:25 - 15:00</Text>
+                        <Text>Tiết 8: 15:25 - 16:00</Text>
                     </View>
                 </View>
             </View>
