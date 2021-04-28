@@ -247,11 +247,13 @@ const ChooseStation = ({ navigation }) => {
     
     )
 
-    const onChangeStation = (item, value) => {
+    const onChangeStation = async (item, value) => {
         const newData = [];
+        const supervisorId = await axios.post(`${host}/teacher/getSupervisorInfo`)
         stationSelected.map(data => {
             if(data === item) {
                 const setStation = {
+                    supervisorId: supervisorId.data,
                     date: data.date,
                     station: value,
                     getOnBusFromHouse: false,

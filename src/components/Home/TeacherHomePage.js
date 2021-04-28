@@ -9,7 +9,8 @@ import {
     ScrollView,
     SafeAreaView,
     Dimensions,
-    FlatList
+    FlatList,
+    ImageBackground
 } from 'react-native'
 
 import axios from 'axios';
@@ -29,6 +30,8 @@ import { Ionicons } from '@expo/vector-icons';
 import AttendenceScreen from '../../screens/AttendenceScreen';
 import MaleNoneAvatar from '../../assets/images/male-none-avatar.png'
 import FemaleNoneAvatar from '../../assets/images/female-none-avatar.png'
+import UserCirle from '../../assets/images/user-circle.png'
+import backgroundImg from '../../assets/images/background-login.jpg'
 const window = Dimensions.get("window");
 const screen = Dimensions.get("screen");
 
@@ -136,8 +139,8 @@ const TeacherHomePage = ({ navigation, route }) => {
     )
 
     return (
-        <View style={styles.container}>
-            <StatusBar backgroundColor="#ffc41d" barStyle="dark-content" />
+        <ImageBackground source={backgroundImg}  style={styles.container}>
+            <StatusBar backgroundColor="#000" barStyle="light-content" />
             <View style={styles.header}>
                 <View style={styles.menu_border}>
                     <View style={styles.menu}>
@@ -164,7 +167,7 @@ const TeacherHomePage = ({ navigation, route }) => {
 
                     <View style={styles.menu}>
                         <TouchableOpacity
-                            onPress={() => navigation.openDrawer()}
+                            onPress={() => navigation.navigate('MessageList')}
                         >
                         <View style={styles.goBackHeader}>
                             <AntDesign name="message1" size={24} color="#000" />
@@ -177,9 +180,19 @@ const TeacherHomePage = ({ navigation, route }) => {
                     <View style={styles.container_header_left}>
                         <View style={styles.container_header_info_area}>
                             <View style={styles.container_header_avt}>
-                                {/* <Image source={{uri: `${host}/${user.Avatar}`}}/> */}
+                                {
+                                    user 
+                                    ?
+                                        user.Avatar
+                                        ?
+                                        <Image source={{ uri: `${host}/${user.Avatar}` }} style={{ width: 50, height: 50, borderRadius: 15 }}/> 
+                                        : <Image source={UserCirle} style={{ width: 50, height: 50 }}/> 
+                                    : null
+                                }
                             </View>
-                            <Text style={{ fontSize: 20, fontWeight: 'bold'}}>Hi! Thầy Phúc</Text>
+                            <Text style={{ fontSize: 20, fontWeight: 'bold'}}>Hi! {user ? user.Gender == 'Male' ? 'Thầy ' : user.Gender == 'Female' ? 'Cô ' : null : null}
+                                { user ? user.FullName.split(' ')[user.FullName.split(' ').length-1] : null }
+                            </Text>
                         </View>
                         <View style={styles.container_header_intro_area}>
                             <Text style={{ color: '#4D5656', fontSize: 12 }}>Muốn biết phải hỏi, muốn giỏi phải học</Text>
@@ -190,7 +203,7 @@ const TeacherHomePage = ({ navigation, route }) => {
                     <View style={styles.container_header_right}>
                         <View style={{alignItems: 'center', paddingTop: 10}}>
                             <Text style={{ textAlign: 'center', fontSize: 12, fontWeight: 'bold', color: '#4D5656'}}>
-                                Thứ {d.getDay()+1}
+                                {d.getDay()+1 === 1 ? 'Chủ nhật' : `Thứ ${d.getDay()+1}`}
                             </Text>
                             <Text style={{ textAlign: 'center', fontSize: 13, fontWeight: 'bold' }}>{d.getDate()} {n}</Text>
                             
@@ -249,14 +262,14 @@ const TeacherHomePage = ({ navigation, route }) => {
                     }
                 </View>
             </View>
-        </View>
+        </ImageBackground>
     );
 };
 
 const styles = StyleSheet.create({ 
     container : {
         flex: 1,
-        backgroundColor: '#ffc41d'   
+        // backgroundColor: '#ffc41d'   
     },
 
     header: {
@@ -298,7 +311,6 @@ const styles = StyleSheet.create({
         width: 50,
         height: 50,
         borderRadius: 15,
-        borderWidth: 1,
         marginRight: 10
     },
 
@@ -386,7 +398,6 @@ const styles = StyleSheet.create({
     },
 
     body_area_content_left_child: {
-        backgroundColor: '#ffc41d',
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',

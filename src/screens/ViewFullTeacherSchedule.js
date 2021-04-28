@@ -9,7 +9,8 @@ import {
     ScrollView,
     SafeAreaView,
     Dimensions,
-    FlatList
+    FlatList,
+    ImageBackground
 } from 'react-native'
 
 import axios from 'axios';
@@ -26,6 +27,8 @@ import { FontAwesome } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
 
 // close icon store
+
+import backgroundImg from '../assets/images/background-login.jpg'
 // import MaleNoneAvatar from '../assets/images/male-none-avatar.png'
 // import FemaleNoneAvatar from '../assets/images/female-none-avatar.png'
 const window = Dimensions.get("window");
@@ -110,7 +113,9 @@ const TeacherHomePage = ({ navigation, route }) => {
             diff = d.getDate() - day + (day == 0 ? -6:1); // adjust when day is sunday
         const dateArr = [];
         for(let i=0 ; i<7 ; i++) {
-            dateArr.push(new Date(d.setDate(diff)).getDate() + i)
+            const date = new Date(d.setDate(diff));
+            const newDate = new Date(date.setDate(date.getDate() + i));
+            dateArr.push(newDate.getDate())
         }
         setDate(dateArr);
       }
@@ -171,10 +176,11 @@ const TeacherHomePage = ({ navigation, route }) => {
             </View>
         </View>
     )
+    
 
     return (
-        <View style={styles.container}>
-            <StatusBar backgroundColor="#ffc41d" barStyle="dark-content" />
+        <ImageBackground source={backgroundImg} style={styles.container}>
+            <StatusBar backgroundColor="#000" barStyle="light-content" />
             <View style={styles.header}>
                 <View style={styles.menu_border}>
                     <View style={styles.menu}>
@@ -187,12 +193,15 @@ const TeacherHomePage = ({ navigation, route }) => {
                         </TouchableOpacity>
                     </View>
 
-                    <View style={{ flex: 1 }} />
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center'}} >
+                        <Text style={{
+                            fontSize: 17,
+                            fontWeight: 'bold'
+                        }}>Lịch giảng dạy</Text>
+                    </View>
 
-                    <View style={styles.menu}>
-                        <TouchableOpacity
-                            onPress={() => navigation.openDrawer()}
-                        >
+                    <View style={{ opacity: 0  }}>
+                        <TouchableOpacity>
                         <View style={styles.goBackHeader}>
                             <AntDesign name="message1" size={24} color="#000" />
                         </View>
@@ -263,7 +272,7 @@ const TeacherHomePage = ({ navigation, route }) => {
                     }
                 </View>
             </View>
-        </View>
+        </ImageBackground>
     );
 };
 
@@ -374,7 +383,7 @@ const styles = StyleSheet.create({
     },
 
     body_area_content_left_child: {
-        backgroundColor: '#ffc41d',
+        backgroundColor: '#38f9d6',
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',

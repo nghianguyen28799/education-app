@@ -23,6 +23,7 @@ import { useDispatch } from 'react-redux';
 import { addUser } from '../actions/userAction'
 import { addInfo } from '../actions/followAction'
 import { addDestination } from '../actions/destinationAction'
+import { addStudent } from '../actions/attendanceListAction'
 
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -151,6 +152,13 @@ const Login = ({ navigation, route }) => {
         })
     }
 
+    const addStudentToAttendannce = async (classCode) => {
+        const isStudentList = await axios.post(`${host}/student/getStudentByClassCode`, { classCode })
+        isStudentList.data.map(item => {
+          dispatch(addStudent(item))
+        })
+    }
+
     const _storeData = async (token, userName, permission) => {
         try {
             setLoading(true);
@@ -171,7 +179,7 @@ const Login = ({ navigation, route }) => {
                     const user = await axios.post(`${host}/teacher/getUserFromToken`, { token, permission: 'supervisor' })
                     dispatch(addUser(user.data))
                     addStudentList(user.data._id)
-                    navigation.replace('Home')
+                    navigation.replace('SupervisorHome')
                     clearInterval(timer) 
                 }, 2000);
             }
@@ -179,6 +187,7 @@ const Login = ({ navigation, route }) => {
                 const timer = setInterval(async () => {
                     const user = await axios.post(`${host}/teacher/getUserFromToken`, { token, permission: 'teacher' })
                     dispatch(addUser(user.data))
+                    addStudentToAttendannce(user.data.ClassCode)
                     navigation.replace('TeacherHome')
                     clearInterval(timer) 
                 }, 2000);
@@ -359,6 +368,7 @@ const Login = ({ navigation, route }) => {
 }
 
 export default Login
+
   async function registerForPushNotificationsAsync() {
     let token;
     if (Constants.isDevice) {

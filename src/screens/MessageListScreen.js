@@ -52,7 +52,7 @@ const MessageListScreen = ({navigation}) => {
               const index = data.messages.length
               setListData(listData =>
                  [...listData, {
-                  chatData: data.messages[index-1],
+                  chatData: data.messages[0],
                   parentsData: resParents.data[0],
                   studentData:resStudent.data.name
                 }])
@@ -66,6 +66,7 @@ const MessageListScreen = ({navigation}) => {
       getData()
     }, [])
 
+    // console.log(listData);
 
     const Item = ({ data }) => {
 

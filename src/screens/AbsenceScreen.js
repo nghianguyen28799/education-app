@@ -50,10 +50,11 @@ const ListStudentScreen = ({ navigation }) => {
 
         for (let i = 0; i < 7; i++) {
             const date = new Date()
-            date.setDate(date.getDate() + i+1)
+            date.setDate(date.getDate() + i)
             setDateList(dateList => [...dateList, { id: `date${i}`, date: date }])
         }
-    }
+       
+    }   
 
     const addDataSelected = (item) => {
         setDateSelected(dateSelected => [...dateSelected, item.date.getDate()+"/"+item.date.getMonth()])
@@ -240,9 +241,10 @@ const ListStudentScreen = ({ navigation }) => {
         // </View>        
     )
 
-    const confirmSubmitApp = () => {
-        const id = user.data._id
-        console.log(id);
+    const confirmSubmitApp = async () => {
+        const isStudent = await axios.post(`${host}/student/getStudentByParentsId`, {id: user.data._id})
+        const classCode = isStudent.data.classCode;
+        const id = user.data._id;
         const newData = [];
         absenceSelected.map(data => {
             // data.date
@@ -258,7 +260,7 @@ const ListStudentScreen = ({ navigation }) => {
                 lesson: lessons
             })
         });
-        axios.post(`${host}/absence/create`, { id: id, absenceApp: newData, reason: absenceValue })
+        axios.post(`${host}/absence/create`, { id: id, absenceApp: newData, reason: absenceValue, classCode: classCode })
         axios.post(`${host}/history/create`, { id: user.data._id, event:"Absence" })
         Alert.alert("Bạn đã gửi yêu cầu xin vắng thành công!")
     }

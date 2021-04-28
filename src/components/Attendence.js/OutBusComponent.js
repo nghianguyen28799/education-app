@@ -50,13 +50,13 @@ const AttendenceComponent = ({ navigation }) => {
 
     const [searchText, setSearchText] = React.useState('');
     const [stationData, setStationData] = React.useState([]);
-    const [isStationSelected, setStationSelected] = React.useState("Chọn bến");
+    const [isStationSelected, setStationSelected] = React.useState("Chọn điểm đến đón");
     const [studentListAtStation, setStudentListAtStation] = React.useState([]);
     const [studentListAtStationFilter, setStudentListAtStationFilter] = React.useState([]);
     const [qtyAttendanced, setQtyAttendanced] = React.useState(0);
 
     const getData = async () => {
-        const isStation = await axios.post(`${host}/station/show`)
+        const isStation = await axios.get(`${host}/station/show`)
         setStationData(isStation.data);
     }
 
@@ -209,10 +209,42 @@ const AttendenceComponent = ({ navigation }) => {
                 if(getDate === dateNow) {
                     axios.post(`${host}/student/getStudentByParentsId`, {id: value.parentsId})
                     .then(res => {
+                        if(scheduleInfo.process.destination === 1 && !value2.getOnBusFromHouse) {
+                            studentName = res.data.name;
+                            axios.post(`${host}/notification/create`, { 
+                                parentsId: value.parentsId,
+                                title: 'Vắng xuống xe',
+                                content: `${studentName} vắng điểm danh xuống xe từ Nhà đến Trường`,
+                            })
+                            axios.post(`${host}/notification/pushNotification`, { 
+                                parentsId: value.parentsId,
+                            })
+                            .then(res => {
+                                res.data.map(item => {
+                                    sendPushNotification(item.tokenDevices, studentName, 1)
+                                });
+                            })
+                        } else if(scheduleInfo.process.destination === 2 && !value2.getOnBusFromSchool) {
+                            studentName = res.data.name;
+                            axios.post(`${host}/notification/create`, { 
+                                parentsId: value.parentsId,
+                                title: 'Vắng xuống xe',
+                                content: `${studentName} vắng điểm danh xuống xe từ Trường về Nhà`,
+                            })
+                            axios.post(`${host}/notification/pushNotification`, { 
+                                parentsId: value.parentsId,
+                            })
+                            .then(res => {
+                                res.data.map(item => {
+                                    sendPushNotification(item.tokenDevices, studentName, 2)
+                                });
+                            })
+                        }
+
                         const studentInfo = {
-                        valueparentsId: value.parentsId,
-                        student: res.data,
-                        station: value2
+                            valueparentsId: value.parentsId,
+                            student: res.data,
+                            station: value2
                         };
                         dispatch(addInfo(studentInfo))
                     })
@@ -276,6 +308,26 @@ const AttendenceComponent = ({ navigation }) => {
                 { text: "Xác nhận", onPress: () => goEnd() }
             ]
         );
+    }
+
+    async function sendPushNotification(expoPushToken, name, type) {
+        const message = {
+          to: expoPushToken,
+          sound: 'default',
+          title: 'Vắng lên xe',
+          body: `${name} đã vắng điểm danh lên xe từ ${type == 1 ? "Nhà đến Trường" : "Trường về nhà"}!`,
+          data: { someData: 'goes here' },
+        };
+        
+        await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Accept-encoding': 'gzip, deflate',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(message),
+        });
     }
 
     const Item = ({ item }) => {
@@ -450,7 +502,7 @@ const AttendenceComponent = ({ navigation }) => {
                     <View style={styles.container}>
                         <View style={{ flexDirection: 'row', flex: 1, alignItems: 'center', marginBottom: 15 }}>
                                 <Entypo name="arrow-with-circle-right" size={24} color="#48C9B0" />
-                                <Text style={{ paddingHorizontal: 10, color: '#148F77', fontWeight: 'bold', fontSize: 14}}>Xem danh sách tại bến</Text>
+                                <Text style={{ paddingHorizontal: 10, color: '#148F77', fontWeight: 'bold', fontSize: 14}}>Xem danh sách chọn điểm đến</Text>
                         </View>
                         <View style={styles.station_selector_space}>
                             <TouchableOpacity
@@ -493,7 +545,7 @@ const AttendenceComponent = ({ navigation }) => {
                         </View>
 
                         <View style={styles.info_station_space}>
-                            <View style={{ flexDirection: 'row', flex: 1, marginVertical: 10 }}>
+                            <View style={{ flexDirection: 'row', flex: 1, marginVertical: 10, }}>
                                 <View style={{ flex: 1/2 }}>
                                     <View style={{ flexDirection: 'row', marginBottom: 10, alignItems: 'flex-end'}}>
                                         <Text style={{ fontSize: 13, color: '#2E86C1'}}>Đi từ: </Text>
@@ -505,14 +557,14 @@ const AttendenceComponent = ({ navigation }) => {
                                     </View>
                                     <Text style={{ fontSize: 13, color: '#2E86C1' }}>Biển số xe: 65A - 56789</Text>
                                 </View>
-                                <View style={{ flex: 1/2, flexDirection: 'row' }}>
+                                <View style={{ flex: 1/2, flexDirection: 'row', justifyContent: 'flex-end' }}>
                                     {
                                         scheduleInfo.status.getOutBus === false
                                         ?   // bat dau
                                         <TouchableOpacity
                                             onPress={goStart}
                                         >
-                                            <View style={{ width: width/9, height: width/9+15 }}>
+                                            <View style={{ width: width/9, height: width/9+15, marginHorizontal: width/15 }}>
                                                 <View style={{ 
                                                     width: width/9, 
                                                     height: width/9, 
@@ -530,7 +582,7 @@ const AttendenceComponent = ({ navigation }) => {
                                         <TouchableOpacity
                                             onPress={getAlertCheck}
                                         >
-                                            <View style={{ width: width/9, height: width/9+15 }}>
+                                            <View style={{ width: width/9, height: width/9+15,marginHorizontal: width/15 }}>
                                                 <View style={{ 
                                                     width: width/9, 
                                                     height: width/9, 
@@ -549,7 +601,7 @@ const AttendenceComponent = ({ navigation }) => {
                                     
                                     
                                     
-                                    <TouchableOpacity>
+                                    {/* <TouchableOpacity>
                                         <View style={{ width: width/9, height: width/9+15, marginHorizontal: width/15 }}>
                                             <View style={{ 
                                                 width: width/9, 
@@ -564,7 +616,7 @@ const AttendenceComponent = ({ navigation }) => {
                                             <Text style={{ fontSize: 9, textAlign: 'center', color: '#2E86C1' }}>Gửi thông báo</Text>
                                         </View>
                                     </TouchableOpacity>
-                                    
+                                     */}
                                     <TouchableOpacity
                                         onPress={() => {
                                             scheduleInfo.status.getOutBus

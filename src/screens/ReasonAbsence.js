@@ -1,65 +1,46 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-    StyleSheet,
-    View,
-    Text,
-    StatusBar,
-    TouchableOpacity,
-    Image,
-    ScrollView,
-    SafeAreaView,
-    TextInput,
-    Dimensions,
-    Picker,
-    Modal
-} from 'react-native'
-import { LinearGradient } from 'expo-linear-gradient';
-
-import { useDispatch, useSelector } from 'react-redux';
-import { addUser } from '../../actions/userAction';
-import axios from 'axios';
-import host from '../../assets/host';
-// icon store 
+  Text,
+  View,
+  StyleSheet,
+  TextInput,
+  StatusBar,
+  TouchableOpacity,
+  Dimensions,
+  Image,
+  Alert
+} from 'react-native';
+import { BarCodeScanner } from 'expo-barcode-scanner';
+// import Modal from 'react-native-modal';
+// icon store
 import { FontAwesome5 } from '@expo/vector-icons'; 
 import { AntDesign } from '@expo/vector-icons'; 
-import { Feather } from '@expo/vector-icons';
-import UserCirle from '../../assets/images/user-circle.png'
-import MaleNoneAvatar from '../../assets/images/male-none-avatar.png'
-import FemaleNoneAvatar from '../../assets/images/female-none-avatar.png'
-// close icon
-
-import RNPickerSelect from 'react-native-picker-select';
-import LottieView from 'lottie-react-native';
-import BottomSheet from 'reanimated-bottom-sheet';
-import Animated from 'react-native-reanimated';
-import * as ImagePicker from 'expo-image-picker';
-import { Alert } from 'react-native';
-
+import { Entypo } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons'; 
+import { MaterialIcons } from '@expo/vector-icons';
+import { FontAwesome } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
+import { Easing } from 'react-native-reanimated';
+// close icon store
+import MaleNoneAvatar from '../assets/images/male-none-avatar.png' 
+import FemaleNoneAvatar from '../assets/images/female-none-avatar.png' 
 const window = Dimensions.get("window");
 const screen = Dimensions.get("screen");
 
 const { width, height } = screen;
 
-const ProfileParentsScreen = ({ navigation }) => {
+import { LinearGradient } from 'expo-linear-gradient';
+import axios from 'axios';
+import host from '../assets/host';
+import { useDispatch, useSelector } from 'react-redux'
 
-    const dispatch = useDispatch();
-    const user = useSelector(state => state.userReducer)
-
-    const [parentsData, setParentsData] = React.useState({});
+const ReasonAbsence = ({navigation, route}) => {
+    const [text, setText] = React.useState('');
     const [studentData, setStudentData] = React.useState({});
     const [teacherData, setTeacherData] = React.useState({});
     const [classData, setClassData] = React.useState({});
-    const [edit, setEdit] = React.useState(false);
-    const [loading, setLoading] = React.useState(false);
-    const [imageStudent, setImageStudent] = React.useState(null);
-    const [imageParents, setImageParents] = React.useState(null);
-    const [isModalVisible, setModalVisible] = React.useState(false);
-    
-    React.useEffect(() => {
-        getStudentById();
-    },[])
-
-    const getStudentById = async () => {
+    const user = useSelector(state => state.userReducer)
+    const fetchData = async () => {
         try{
             const isStudent = await axios.post(`${host}/student/getStudentByParentsId`, {id: user.data._id})
             const isTeacher = await axios.post(`${host}/teacher/getUserById`, {id: isStudent.data.teacherCode})
@@ -67,576 +48,103 @@ const ProfileParentsScreen = ({ navigation }) => {
             setStudentData(isStudent.data) 
             setTeacherData(isTeacher.data)  
             setClassData(isClass.data[0])
-            setParentsData(user.data)
-            // console.log(isStudent.data);
-            // console.log(isTeacher.data);
         } catch(error) {
             console.log(error);
         }
     }
 
-    const getGoBack = () => {
-        navigation.goBack();
-    }
+    React.useEffect(() => {
+        fetchData()
+    },[])
 
-    const changeEdit = async () => {
-        setEdit(!edit);
-    }
-
-    const onChangeTextName = (value) => {
-        setParentsData({
-            ...parentsData,
-            FullName: value
+    const handleAbsence = async () => {
+        await axios.post(`${host}/noattendance/editReason`,{
+            classCode: classData._id,
+            parentsId: user.data._id,
+            reason: text
         })
-    }
-
-    const onChangeTextPhone = (value) => {
-        setParentsData({
-            ...parentsData,
-            NumberPhone: value
+        await axios.post(`${host}/notification/editStatus`, {
+            id: route.params.id
         })
+
+        navigation.replace('Home')
     }
 
-    const onChangeTextEmail = (value) => {
-        setParentsData({
-            ...parentsData,
-            Email: value
-        })
-    }
-
-    const onChangeTextBirthDay = (value) => {
-        setParentsData({
-            ...parentsData,
-            birthDay: value
-        })
-    }
-
-    const onChangeTextRelationship = (value) => {
-        setParentsData({
-            ...parentsData,
-            relationship: value
-        })
-    }
-
-    const onChangeTextAddress = (value) => {
-        setParentsData({
-            ...parentsData,
-            Address: value
-        })
-    }
-
-    const onChangeTextGender = (value) => {
-        setParentsData({
-            ...parentsData,
-            Gender: value
-        })
-    }
-
-    const confirmChangeInfo = async () => {
-        const changeInfo = await axios.post(`${host}/users/changeInfoParents`, { parentsData })
-        const { data, error } = changeInfo;
-        
-        if(!error) {
-            setLoading(true)
-            const timer = setInterval(async () => {
-                dispatch(addUser(parentsData))
-                navigation.replace('Profile');
-                clearInterval(timer)
-            },2000)
- 
-        } else {
-            console.log(error);
-        }
-    }
-
-    const toggleModal = () => {
-        setModalVisible(!isModalVisible);
-    };
-
-    const ModalComponent = () => {
-        return (
-          <Modal animationType = {"slide"} transparent = {false}
-            visible = {isModalVisible}  
-              onRequestClose = {() => { console.log("Modal has been closed.") } 
-          }>
-              <View style={{ width: '100%', height: "100%", backgroundColor: 'red', justifyContent: 'center', alignItems: 'center'}}>
-                <View style={{ width: width*2/3, height: 'auto', borderWidth: 1, padding: 10, borderRadius: 10, backgroundColor: '#fff' }}>
-                    <View style={{ width: '100%', alignItems: 'center' }}>
-                        <Text style={{ fontSize: 18}}>
-                            Cập nhật hình ảnh cá nhân
-                        </Text>
-                    </View>
-                </View>
-              </View>
-        </Modal>
-        )
-    }
     return (
-        <ScrollView>
-            <View style={styles.container}>
-                <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-                <ModalComponent />
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={getGoBack}>
-                        <View style={styles.goBackHeader}>
-                            <FontAwesome5 name="angle-left" size={30} color="#6495ED"/>
-                        </View>
-                    </TouchableOpacity>
-                    
-                    <View style={styles.titleHeader}>
-                        <Text style={styles.titleHeader_text}>Hồ sơ học sinh</Text>
+        <View style={styles.container}>
+            <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <View style={styles.goBackHeader}>
+                        <FontAwesome5 name="angle-left" size={30} color="#6495ED"/>
                     </View>
-                    
-                    <TouchableOpacity>
-                        <View style={styles.RealtimeChatHeader}>
-                            <AntDesign name="message1" size={22} color="#6495ED" />
+                </TouchableOpacity>
+                
+                <View style={styles.titleHeader}>
+                    <Text style={styles.titleHeader_text}>Lý do vắng điểm danh</Text>
+                </View>
+                
+                <View style={styles.RealtimeChatHeader}>
+                    <AntDesign name="message1" size={22} color="#6495ED" />
+                    <Text style={styles.RealtimeChatHeader_text}>9</Text>
+                </View>
+            </View>  
+            <View style={ styles.body }>
+                <View style={styles.reason_intro}>
+                    <Text style={{ textAlign: 'center', color: '#2980B9' }}>
+                        Học sinh chưa được điểm danh ngày { route.params.date }. Vui lòng điền lý do vắng mặt ở dưới và xác nhận học sinh vắng
+                    </Text>
+                </View>
+                <View style={ styles.reason_body }>
+                    <View style={ styles.reason_form }>
+                        <View style={ styles.form_title }>
+                            <Text style={{ fontSize: 15, color: '#2980B9', fontWeight: 'bold' }}>Form điền lý do vắng</Text>
                         </View>
-                    </TouchableOpacity>
-                </View>  
-                 
-                <View style={styles.body}>
-                    <View style={styles.contentProfile}>
-                        <View style={styles.contentProfile_avatar}>
+                        <View style={styles.reason_content}>
+                            <View style={styles.reason_content_left}>
                             {
-                                studentData.gender === "Male"
-                                ?  <Image source={MaleNoneAvatar} style={{ width: 80, height: 80 }}/> 
-                                : studentData.gender === "Female"
-                                ?  <Image source={FemaleNoneAvatar} style={{ width: 80, height: 80 }}/> 
+                                studentData.avatar 
+                                    ? <Image source={{ uri: `${host}/${studentData.avatar}`}} style={{ width: 80, height: 80, borderRadius: 40 }}/> 
+                                    : studentData.gender === "Male"
+                                    ? <Image source={MaleNoneAvatar} style={{ width: 80, height: 80 }}/> 
+                                    : studentData.gender === "Female"
+                                    ? <Image source={FemaleNoneAvatar} style={{ width: 80, height: 80 }}/> 
                                 : null
                             }
-                           
-                        </View>
-                        
-                        {/* Họ tên */}
-
-                        <View style={styles.contentProfile_textfield}>
-                            <Text style={styles.contentProfile_textfield_title}> Họ và tên </Text>
-                            <Text style={styles.contentProfile_textfield_content}> 
-                                {
-                                    studentData.name
-                                    ? studentData.name
-                                    : null
-                                }
-                            </Text>
-                        </View>   
-
-                        {/* Giới tính */}
-
-                        <View style={styles.contentProfile_textfield}>
-                            <Text style={styles.contentProfile_textfield_title}> Giới tính</Text>
-                            <Text style={styles.contentProfile_textfield_content}>
-                                {
-                                    studentData.gender == 'Male'
-                                    ? 'Nam'
-                                    : studentData.gender == 'Female'
-                                    ? 'Nữ'
-                                    : null
-                                }
-                            </Text>
-                        </View>   
-
-                        {/* Ngày sinh */}
-
-                        <View style={styles.contentProfile_textfield}>
-                            <Text style={styles.contentProfile_textfield_title}> Ngày sinh</Text>
-                            <Text style={styles.contentProfile_textfield_content}> 
-                                {
-                                    studentData.birthday
-                                    ? studentData.birthday
-                                    : null
-                                }
-                            </Text>
-                        </View>   
-
-                        {/* Ngày nhập học */}
-
-                        <View style={styles.contentProfile_textfield}>
-                            <Text style={styles.contentProfile_textfield_title}>Ngày nhập học</Text>
-                            <Text style={styles.contentProfile_textfield_content}>
-                                {
-                                    studentData.joined
-                                    ? studentData.joined
-                                    : null
-                                }
-                            </Text>
-                        </View>  
-
-                        {/* Lớp */}
-
-                        <View style={styles.contentProfile_textfield}>
-                            <Text style={styles.contentProfile_textfield_title}> Lớp</Text>
-                            <Text style={styles.contentProfile_textfield_content}> {`Lớp `}
-                                {
-                                    classData.ClassCode
-                                    ? classData.ClassCode
-                                    : null
-                                }
-                            
-                            </Text>
-                        </View>   
-
-                        {/* GVCN */}
-
-                        <View style={styles.contentProfile_textfield}>
-                            <Text style={styles.contentProfile_textfield_title}> Giáo viên chủ nhiệm</Text>
-                            <Text style={styles.contentProfile_textfield_content}>
-                                {
-                                    teacherData.Gender === 'Male'
-                                    ? '( Thầy ) '
-                                    : teacherData.Gender === 'Female'
-                                    ? '( Cô ) '
-                                    : null 
-                                }
-                                {
-                                    teacherData.FullName
-                                    ? teacherData.FullName
-                                    : null
-                                }
-                            </Text>
+                            </View>
+                            <View style={styles.reason_content_right}>
+                                <Text style={{ fontWeight: 'bold', textTransform: 'uppercase', color: '#2980B9' }}>
+                                    { studentData ? studentData.name : null}
+                                </Text>
+                                <Text>Lớp: <Text style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{ classData ? classData.ClassCode : null }</Text></Text>
+                                <Text>GVCN: </Text>
+                                <View style={{ flexDirection: 'row' }}>
+                                    <Text>({ teacherData ? teacherData.Gender === "Male" ? "Thầy" : teacherData.Gender === "Female" ? "Cô" : null : null}) </Text>
+                                    <Text style={{ textTransform: 'uppercase', fontWeight: 'bold' }}>{teacherData ? teacherData.FullName : null }</Text>
+                                </View>
+                                <View style={{ width: '100%', borderBottomWidth: 1, borderBottomColor: '#BDC3C7', paddingVertical: 5 }}>
+                                    <TextInput 
+                                        placeholder="Điền lý do vắng"
+                                        onChangeText={(value) => setText(value)}
+                                    />
+                                </View>
+                                <TouchableOpacity
+                                    onPress={handleAbsence}
+                                >
+                                    <View style={{ width: '100%', alignItems: 'center', marginTop: 20, paddingVertical: 12, borderRadius: 13, backgroundColor: '#5DADE2' }}>
+                                        <Text style={{ color: '#fff' }}>Xác nhận</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
-                    
-
-                    <View style={{ flex: 1, borderWidth: 1, borderColor: '#D5DBDB', marginVertical: 15}} /> 
-
-                    {
-                        edit
-
-                        ?   // Edit Info
-                        
-                        <View style={styles.contentProfile_parents}>
-                        <View style={styles.contentProfile_parents_header}>
-                            <LinearGradient 
-                                start={{ x: 0, y: 0.5 }}
-                                end={{ x: 1, y: 0.5 }}
-                                locations={[0.5, 1]}
-                                colors={['#f1c1bfed', '#69dfe3']}
-                                style={{
-                                    flex: 1,
-                                    flexDirection: 'row',
-                                    borderTopLeftRadius: 20,
-                                    borderTopRightRadius: 20,
-                                    paddingHorizontal: 20,
-                                    alignItems: 'center',
-                                }}>
-
-                                    <TouchableOpacity onPress={changeEdit}>
-                                        <FontAwesome5 name="angle-left" size={30} color="#2471A3" style={{ marginRight: 15}}/>
-                                    </TouchableOpacity>
-
-                                    <Text style={{
-                                        flex: 1,
-                                        fontSize: 16,
-                                        fontWeight: 'bold',
-                                        color: '#2980B9'
-                                    }}>
-                                        Cập nhật thông tin phụ huynh
-                                    </Text>
-                                    
-                                    <TouchableOpacity onPress={confirmChangeInfo}>
-                                        <AntDesign name="check" size={22} color="#28B463" />
-                                    </TouchableOpacity>
-
-                            </LinearGradient>
-                        </View>
-
-                        <View style={styles.contentProfile_parents_body}>
-                            <View style={{
-                                flexDirection: 'row',
-                                // borderWidth: 1,
-                            }}>
-
-                                {/* Image  */}
-                                <TouchableOpacity onPress={toggleModal}>
-                                    <Image source={UserCirle} style={{ width: 80, height: 80}}/> 
-                                </TouchableOpacity>
-                               
-                                <View style={{ flex: 1, flexDirection: 'column' }}>
-                                    <View style={{ flexDirection: 'row', flex: 1, alignItems: 'center', marginLeft: 15  }}>
-                                        <Text style={{ 
-                                            color: "#A6ACAF", 
-                                            fontSize: 12, 
-                                            fontWeight: 'bold', 
-                                            borderBottomWidth: 1, 
-                                            borderBottomColor: '#D5DBDB',
-                                            justifyContent: 'center',
-                                            height: 30,
-                                            textAlign: 'auto',
-                                            paddingTop: 7
-                                        }}>
-                                            Họ và tên:
-                                        </Text>
-                                        <TextInput 
-                                            style={{ 
-                                                flex: 1, 
-                                                color: "#2980B9", 
-                                                fontSize: 12, 
-                                                fontWeight: 'bold', 
-                                                borderBottomWidth: 1,  
-                                                borderBottomColor: '#D5DBDB',
-                                                textAlign: 'right',
-                                                height: 30,
-                                            }}
-                                            value={parentsData.FullName} 
-                                            onChangeText={(value) => onChangeTextName(value)}
-                                        />
-                                    </View>
-                                    <View style={{ flexDirection: 'row', flex: 1, alignItems: 'center', marginLeft: 15 }}>
-                                    <Text style={{ 
-                                            color: "#A6ACAF", 
-                                            fontSize: 12, 
-                                            fontWeight: 'bold', 
-                                            borderBottomWidth: 1, 
-                                            borderBottomColor: '#D5DBDB',
-                                            justifyContent: 'center',
-                                            height: 30,
-                                            textAlign: 'auto',
-                                            paddingTop: 7
-                                        }}>
-                                            Số điện thoại
-                                        </Text>
-                                        <TextInput 
-                                            style={{ 
-                                                flex: 1, 
-                                                color: "#2980B9", 
-                                                fontSize: 12, 
-                                                fontWeight: 'bold', 
-                                                borderBottomWidth: 1,  
-                                                borderBottomColor: '#D5DBDB',
-                                                textAlign: 'right',
-                                                height: 30,
-                                            }}
-                                            value={parentsData.NumberPhone} 
-                                            onChangeText={(value) => onChangeTextPhone(value)}
-                                        />
-                                    </View>
-                                </View>
-                            </View>
-                        
-                            <View style={styles.contentProfile_textfield}>
-                                <Text style={styles.contentProfile_textfield_title}> Email: </Text>
-                                <TextInput
-                                    style={styles.contentProfile_textinput_content}
-                                    value={parentsData.Email}
-                                    onChangeText={(value) => onChangeTextEmail(value)}
-                                />
-                            </View>
-                        
-                            <View style={styles.contentProfile_textfield}>
-                                <Text style={styles.contentProfile_textfield_title}> Giới tính: </Text>
-                                
-                                <View
-                                    style={{ flex: 1, justifyContent: 'center', alignItems: 'flex-end'}}
-                                >
-                                    <Picker
-                                        selectedValue={parentsData.Gender}
-                                        style={{ height: 30, width: 100,  color: '#2980B9', fontSize: 13, }}
-                                        onValueChange={(itemValue) => onChangeTextGender(itemValue)}
-                                        >
-                                        <Picker.Item label="Nam" value="Male" />
-                                        <Picker.Item label="Nữ" value="Female" />
-                                    </Picker>
-                                </View>
-                            </View>
-
-                            <View style={styles.contentProfile_textfield}>
-                                <Text style={styles.contentProfile_textfield_title}> Mối quan hệ: </Text>
-                                <TextInput
-                                    style={styles.contentProfile_textinput_content}
-                                    value={parentsData.relationship}
-                                    onChangeText={(value) => onChangeTextRelationship(value)}
-                                />
-                            </View>
-                            
-                            <View style={styles.contentProfile_textfield}>
-                                <Text style={styles.contentProfile_textfield_title}> Năm sinh: </Text>
-                                <TextInput
-                                    style={styles.contentProfile_textinput_content}
-                                    value={parentsData.birthDay}
-                                    onChangeText={(value) => onChangeTextBirthDay(value)}
-                                />
-                            </View>
-
-                            <View style={styles.contentProfile_textfield}>
-                                <Text style={styles.contentProfile_textfield_title}> Địa chỉ: </Text>
-                                <TextInput
-                                    style={styles.contentProfile_textinput_content}
-                                    value={parentsData.Address}
-                                    onChangeText={(value) => onChangeTextAddress(value)}
-                                />
-                            </View>
-                        </View>
-                        {
-                            loading
-                            ? <LottieView source={require('../../assets/json/loader.json')} autoPlay loop />
-                            : null
-                        }
-                    </View> 
-
-                    :       // View Info
-
-                    <View style={styles.contentProfile_parents}>
-                        <View style={styles.contentProfile_parents_header}>
-                            <LinearGradient 
-                                start={{ x: 0, y: 0.5 }}
-                                end={{ x: 1, y: 0.5 }}
-                                locations={[0.5, 1]}
-                                colors={['#f1c1bfed', '#69dfe3']}
-                                style={{
-                                    flex: 1,
-                                    flexDirection: 'row',
-                                    borderTopLeftRadius: 20,
-                                    borderTopRightRadius: 20,
-                                    paddingHorizontal: 20,
-                                    alignItems: 'center',
-                                }}>
-                                <Text style={{
-                                    flex: 1,
-                                    fontSize: 16,
-                                    fontWeight: 'bold',
-                                    color: '#2980B9'
-                                 }}>
-                                    Thông tin phụ huynh
-                                </Text>
-                                
-                                <TouchableOpacity onPress={changeEdit}>
-                                    <Feather name="edit" size={22} color="#2471A3" />
-                                </TouchableOpacity>
-                            </LinearGradient>
-                        </View>
-
-                        <View style={styles.contentProfile_parents_body}>
-                            <View style={{
-                                flexDirection: 'row',
-                                // borderWidth: 1,
-                            }}>
-                                <Image source={UserCirle} style={{ width: 80, height: 80}}/> 
-                                <View style={{ flex: 1, flexDirection: 'column' }}>
-                                    <View style={{ flexDirection: 'row', flex: 1, alignItems: 'center', marginLeft: 15, }}>
-                                        <Text style={{ 
-                                            color: "#A6ACAF", 
-                                            fontSize: 12, 
-                                            fontWeight: 'bold', 
-                                            borderBottomWidth: 1, 
-                                            borderBottomColor: '#D5DBDB',
-                                            paddingVertical: 5 
-                                        }}>
-                                            Họ và tên:
-                                        </Text>
-                                        <Text style={{ 
-                                            flex: 1, 
-                                            color: "#2980B9", 
-                                            fontSize: 12, 
-                                            fontWeight: 'bold', 
-                                            borderBottomWidth: 1,  
-                                            borderBottomColor: '#D5DBDB',
-                                            paddingVertical: 5,
-                                            textAlign: 'right'
-                                        }}>
-                                            {
-                                                user.data.FullName
-                                                ? user.data.FullName
-                                                : null
-                                            }
-                                        </Text>
-                                    </View>
-                                    <View style={{ flexDirection: 'row', flex: 1, alignItems: 'center', marginLeft: 15 }}>
-                                        <Text style={{ 
-                                            color: "#A6ACAF", 
-                                            fontSize: 12, 
-                                            fontWeight: 'bold', 
-                                            borderBottomWidth: 1, 
-                                            borderBottomColor: '#D5DBDB',
-                                            paddingVertical: 5,
-                                        }}>
-                                            Số điện thoại:
-                                        </Text>
-                                        <Text style={{ 
-                                            flex: 1, 
-                                            color: "#2980B9", 
-                                            fontSize: 12, 
-                                            fontWeight: 'bold', 
-                                            borderBottomWidth: 1,  
-                                            borderBottomColor: '#D5DBDB',
-                                            paddingVertical: 5,
-                                            textAlign: 'right'
-                                        }}>
-                                            {
-                                                user.data.NumberPhone
-                                                ? user.data.NumberPhone
-                                                : null
-                                            }
-                                        </Text>
-                                    </View>
-                                </View>
-                            </View>
-                        
-                            <View style={styles.contentProfile_textfield}>
-                                <Text style={styles.contentProfile_textfield_title}> Email: </Text>
-                                <Text style={styles.contentProfile_textfield_content}> 
-                                    {
-                                        user.data.Email
-                                        ? user.data.Email
-                                        : null
-                                    }
-                                </Text>
-                            </View>
-                        
-                            <View style={styles.contentProfile_textfield}>
-                                <Text style={styles.contentProfile_textfield_title}> Giới tính: </Text>
-                                <Text style={styles.contentProfile_textfield_content}> 
-                                    {
-                                        user.data.gender === "Male"
-                                        ? 'Nam'
-                                        : user.data.gender === "Female"
-                                        ? "Nữ"
-                                        : null
-                                    }
-                                </Text>
-                            </View>
-
-                            <View style={styles.contentProfile_textfield}>
-                                <Text style={styles.contentProfile_textfield_title}> Mối quan hệ: </Text>
-                                <Text style={styles.contentProfile_textfield_content}> 
-                                    {
-                                        user.data.relationship
-                                        ? user.data.relationship
-                                        : null
-                                    }
-                                </Text>
-                            </View>
-                            
-                            <View style={styles.contentProfile_textfield}>
-                                <Text style={styles.contentProfile_textfield_title}> Năm sinh: </Text>
-                                <Text style={styles.contentProfile_textfield_content}>
-                                    {
-                                        user.data.birthDay
-                                        ? user.data.birthDay
-                                        : null
-                                    }
-                                </Text>
-                            </View>
-
-                            <View style={styles.contentProfile_textfield}>
-                                <Text style={styles.contentProfile_textfield_title}> Địa chỉ: </Text>
-                                <Text style={styles.contentProfile_textfield_content}> 
-                                    {
-                                        user.data.Address
-                                        ? user.data.Address
-                                        : null
-                                    }
-                                </Text>
-                            </View>
-                        </View>
-                    </View> 
-                    }
                 </View>
             </View>
-        </ScrollView>
-    );
-};
+        </View>
+    )
+}
 
-export default ProfileParentsScreen;
+export default ReasonAbsence
 
 const styles = StyleSheet.create({ 
     container : {
@@ -654,6 +162,7 @@ const styles = StyleSheet.create({
 
     goBackHeader: {
         padding: 10,
+        marginRight: 20
     },
 
     titleHeader: {
@@ -668,100 +177,80 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         color: '#2980B9',
-        paddingLeft: 15,       
     },
 
     RealtimeChatHeader: {
         padding: 10,
         opacity: 0
     },
-
-    body: { 
-        flex: 1,
-        padding: 10,
-    },
-
-    contentProfile: {
-        backgroundColor: '#fff',
-        flex: 2/3,  
-        borderRadius: 20,
-        padding: 20,
-        // shadown
-        shadowColor: "blue",
-        shadowOffset: {
-            width: 0,
-            height: 2, 
-        },
-        shadowOpacity: 0.5,
-        shadowRadius: 3.84,
-        elevation: 7,
-    },
     
-    contentProfile_avatar: {
-        height: 100,
+    RealtimeChatHeader_text: {
+        fontSize: 11,
+        color: '#FFF',
+        backgroundColor: '#FA0000',
+        height: 15,
+        width: 15,
         alignItems: 'center',
         justifyContent: 'center',
-    },
-
-    contentProfile_textfield: {
-        flex: 1/9,
-        flexDirection: 'row',
-        borderBottomWidth: 1,
-        borderBottomColor: '#D5DBDB',
-        marginBottom: 5,
-        alignItems: 'center'
-    },
-
-    contentProfile_textfield_title: {
-        marginTop: 10,
-        paddingVertical: 5, 
-        color: '#A6ACAF',
-        fontSize: 12,
-        fontWeight: 'bold',
-    },
-
-    contentProfile_textfield_content: {
-        flex: 1,
-        marginTop: 10,
-        paddingVertical: 5, 
-        color: '#2980B9',
-        fontSize: 13,
-        fontWeight: 'bold',
-        textAlign: 'right',
-    },
-
-    contentProfile_textinput_content: {
-        flex: 1,
-        marginTop: 10,
-        // paddingVertical: 5, 
-        color: '#2980B9',
-        fontSize: 13,
-        fontWeight: 'bold',
-        textAlign: 'right',
-    },
-
-    contentProfile_parents: {
-        backgroundColor: '#fff',
-        flex: 2/3,  
+        textAlign: 'center',
         borderRadius: 20,
-        paddingBottom: 20,
-        // shadown
-        shadowColor: "blue",
-        shadowOffset: {
-            width: 0,
-            height: 2, 
-        },
-        shadowOpacity: 0.5,
-        shadowRadius: 3.84,
-        elevation: 7,
+        position: 'absolute',
+        right: 4,
+        bottom: 4,
     },
 
-    contentProfile_parents_header: {
-        height: 50,
+    body: {
+        flex: 1, 
     },
-    
-    contentProfile_parents_body: {
-        marginTop: 15,
+
+    reason_intro: {
+        height: '15%',
+        // borderWidth: 1,
+        justifyContent: 'center', 
+        alignItems: 'center',
         paddingHorizontal: 20
     },
+
+    reason_body: {
+        flex: 1,
+        paddingHorizontal: 15,
+    },
+
+    reason_form: {
+        // borderWidth: 1,
+        paddingHorizontal: 15,
+        borderRadius: 15,
+        backgroundColor: '#fff',
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+
+    form_title: {
+        alignItems: 'center',
+        paddingVertical: 15,
+        borderBottomWidth: 2,
+        borderBottomColor: '#BDC3C7',
+    },
+
+    reason_content: {
+        paddingVertical: 40,
+        flexDirection: 'row',
+    },
+
+    reason_content_left: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        marginRight: 10
+    },
+
+    reason_content_right: {
+        flex: 1,
+    }
 })

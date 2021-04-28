@@ -110,7 +110,7 @@ const HistoryScreen = ({ navigation }) => {
                     <FlatList
                         data={data.events}
                         renderItem={renderItem}
-                        keyExtractor={item => item.id}
+                        keyExtractor={item => item._id}
                     />
                     : null
                 }

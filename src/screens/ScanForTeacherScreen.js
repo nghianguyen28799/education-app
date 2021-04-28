@@ -34,8 +34,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import host from '../assets/host';
 import { useDispatch, useSelector } from 'react-redux'
-import { addInfo, initialInfo } from '../actions/followAction'
-import { addDestination } from '../actions/destinationAction'
+import { addStudent, initialStudent } from '../actions/attendanceListAction'
 
 
 const getAttendanceScreen = {
@@ -62,72 +61,42 @@ export default function ScanScreen({ navigation, route }) {
   const [scanned, setScanned] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
   const [studentData, setStudentData] = useState();
+  const [tokens, setTokens] = useState([]);
   const [parentsData, setParentsData] = useState();
   const [classData, setClassData] = useState();
   const [teacherData, setTeacherData] = useState();
 
-  const toggleModal = () => {
-    setModalVisible(!isModalVisible);
-  };
-
   const openScan = () => {
-    setModalVisible(!isModalVisible);
     setScanned(false)
+    setModalVisible(!isModalVisible);
   }
 
-  const loadStudentList = async () => {
-    dispatch(initialInfo());
-    const id = user._id;
-    const isSchedule = await axios.post(`${host}/supervisorschedule/showdestination`, { id: id})
-     
-    if(Object.entries(isSchedule.data).length != 0) {
-      dispatch(addDestination(isSchedule.data))
-    }  else {
-      dispatch(addDestination({
-        date: new Date(),
-        process: {
-            "destination": 0,
-            "status": false,
-          },
-        status: {
-            "getOnBus": false,
-            "getOutBus": false,
-          },
-      }))
-    }   
-    
-
-    const isList = await axios.post(`${host}/registerbus/showAllList`)
-    const dateNow = new Date(isSchedule.data.date).getDate()+"/"+new Date(isSchedule.data.date).getMonth()
-    
-    isList.data.map(value => {
-        value.listBookStation.map(value2 => {
-            const getDate = (new Date(value2.date)).getDate()+'/'+(new Date(value2.date)).getMonth()
-            if(getDate === dateNow) {
-                axios.post(`${host}/student/getStudentByParentsId`, {id: value.parentsId})
-                .then(res => {
-                  const studentInfo = {
-                    valueparentsId: value.parentsId,
-                    student: res.data,
-                    station: value2
-                  };
-                  dispatch(addInfo(studentInfo))
-                })
-            }    
-        })
+  const loadStudentList = async (classCode) => {
+    dispatch(initialStudent());
+    const isStudentList = await axios.post(`${host}/student/getStudentByClassCode`, { classCode })
+    isStudentList.data.map(item => {
+      dispatch(addStudent(item))
     })
   }
   
-  const alertQR = (name) => {
+  const alertQR = async (name) => {
+    await tokens.map(item => {
+      sendPushNotification(item.tokenDevices, name)
+    })
+    await axios.post(`${host}/notification/create`, { 
+      parentsId: parentsData._id,
+      title: "Điểm danh",
+      content: `${name} đã điểm danh vào lớp!`,
+    })
     Alert.alert(
       "Thành công!",
       `${name} đã ghi danh thành công!`,
       [
         { text: "OK" }
       ]
-  );
+    );
   }
-
+  
   const ModalComponent = () => {
     return (
       <Modal animationType = {"slide"} transparent = {false}
@@ -203,10 +172,10 @@ export default function ScanScreen({ navigation, route }) {
                     <TouchableOpacity
                       style={{ flex: 1/2, height: 50, justifyContent: 'center', alignItems: 'center', marginHorizontal: 10, borderRadius: 30 }}
                       onPress={() => {
-                        axios.post(`${host}/registerbus/attendance`,
-                         {id: parentsData._id, type: route.params.type, supervisorId: route.params.supervisorId}
+                        axios.post(`${host}/student/getAttendanceSuccessly`,
+                         {id: studentData._id}
                         ).then(() => {
-                          loadStudentList()
+                          loadStudentList( studentData.classCode )
                           openScan()
                           alertQR(studentData.name)
                         })
@@ -273,18 +242,18 @@ export default function ScanScreen({ navigation, route }) {
   }, []);
 
   const handleBarCodeScanned = async ({ type, data }) => {
+    setScanned(true);
     var dom1 = data.slice(data.indexOf("/")+2, data.length)
     var dom2 = dom1.slice(dom1.indexOf("/")+1, dom1.length)
     const isStudent = await axios.get(`${host}/${dom2}`)
-    const isParents = await axios.post(`${host}/users/getUserById`, { id: isStudent.data.parentsCode })
-    const isClass = await axios.post(`${host}/class/getClassById`, { id: isStudent.data.classCode })
-    const isTeacher = await axios.post(`${host}/teacher/getUserById`, { id: isStudent.data.teacherCode })
-    setStudentData(isStudent.data)
-    // console.log(isStudent.data);
+    const isParents = await axios.post(`${host}/users/getUserById`, { id: isStudent.data.student.parentsCode })
+    const isClass = await axios.post(`${host}/class/getClassById`, { id: isStudent.data.student.classCode })
+    const isTeacher = await axios.post(`${host}/teacher/getUserById`, { id: isStudent.data.student.teacherCode })
+    setStudentData(isStudent.data.student)
+    setTokens(isStudent.data.tokens)
     setParentsData(isParents.data[0])
     setTeacherData(isTeacher.data)
     setClassData(isClass.data[0])
-    setScanned(true);
     setModalVisible(!isModalVisible);
   };
 
@@ -319,6 +288,26 @@ export default function ScanScreen({ navigation, route }) {
     borderBottomWidth: 3,
     borderColor: '#fff',
   };
+
+  async function sendPushNotification(expoPushToken, name) {
+    const message = {
+      to: expoPushToken,
+      sound: 'default',
+      title: 'Điểm danh',
+      body: `${name} đã điểm danh vào lớp!`,
+      data: { someData: 'goes here' },
+    };
+    
+    await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Accept-encoding': 'gzip, deflate',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(message),
+    });
+  }
 
   return (
     <View style={styles.container}>
@@ -374,6 +363,7 @@ export default function ScanScreen({ navigation, route }) {
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({ 
   container : {

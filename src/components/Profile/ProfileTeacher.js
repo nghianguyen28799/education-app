@@ -393,23 +393,37 @@ const ProfileTeacherScreen = ({ navigation }) => {
                         <View style={styles.contentProfile_textfield}>
                             <Text style={styles.contentProfile_textfield_title}>Quyền </Text>
                             <Text style={[styles.contentProfile_textfield_content, {color: "#A6ACAF"} ]}>
-                                Giáo viên
+                                {
+                                    user
+                                    ?
+                                        user.data.permission == 'supervisor'
+                                        ? "Giáo viên đưa đón"
+                                        : "Giáo viên chủ nhiệm"
+                                    :<></>
+                                }
                             </Text>
                         </View> 
     
                         {/* Lớp */}
-    
-                        <View style={styles.contentProfile_textfield}>
-                            <Text style={styles.contentProfile_textfield_title}>Chủ nhiệm lớp </Text>
-                            <Text style={[styles.contentProfile_textfield_content, {color: "#A6ACAF"} ]}> {`Lớp `}
-                                {
-                                    classData.ClassCode
-                                    ? classData.ClassCode
-                                    : null
-                                }
-                            
-                            </Text>
-                        </View>   
+                        {
+                            user ?
+                                user.data.permission == 'teacher'
+                                ?
+                                <View style={styles.contentProfile_textfield}>
+                                    <Text style={styles.contentProfile_textfield_title}>Chủ nhiệm lớp </Text>
+                                    <Text style={[styles.contentProfile_textfield_content, {color: "#A6ACAF"} ]}> {`Lớp `}
+                                        {
+                                            classData.ClassCode
+                                            ? classData.ClassCode
+                                            : null
+                                        }
+                                    
+                                    </Text>
+                                </View>
+                                : <></>
+                            : <></>
+                        }
+                           
                     </View>
                     {
                         loading
@@ -555,22 +569,37 @@ const ProfileTeacherScreen = ({ navigation }) => {
                         <View style={styles.contentProfile_textfield}>
                             <Text style={styles.contentProfile_textfield_title}>Quyền </Text>
                             <Text style={styles.contentProfile_textfield_content}> 
-                                Giáo viên
+                                {
+                                    user
+                                    ?
+                                        user.data.permission == 'supervisor'
+                                        ? "Giáo viên đưa đón"
+                                        : "Giáo viên chủ nhiệm"
+                                    :<></>
+                                }
                             </Text>
                         </View> 
     
                         {/* Lớp */}
     
-                        <View style={styles.contentProfile_textfield}>
-                            <Text style={styles.contentProfile_textfield_title}>Chủ nhiệm lớp </Text>
-                            <Text style={styles.contentProfile_textfield_content}> {`Lớp `}
-                                {
-                                    classData.ClassCode
-                                    ? classData.ClassCode
-                                    : null
-                                }
-                            </Text>
-                        </View>   
+                        {
+                            user ?
+                                user.data.permission == 'teacher'
+                                ?
+                                <View style={styles.contentProfile_textfield}>
+                                    <Text style={styles.contentProfile_textfield_title}>Chủ nhiệm lớp </Text>
+                                    <Text style={[styles.contentProfile_textfield_content, {color: "#A6ACAF"} ]}> {`Lớp `}
+                                        {
+                                            classData.ClassCode
+                                            ? classData.ClassCode
+                                            : null
+                                        }
+                                    
+                                    </Text>
+                                </View>
+                                : <></>
+                            : <></>
+                        }
                     </View>
                 </View>
             </View>  

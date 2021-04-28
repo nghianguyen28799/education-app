@@ -79,6 +79,8 @@ export default function LoaderScreen({ navigation }) {
   }
 
   const handleChangePage = async () => {
+    // AsyncStorage.clear();
+    // navigation.replace('Welcome');
     const getUserNameMemo = await AsyncStorage.getItem('userNameMemo');
     const getSelected= await AsyncStorage.getItem('isSelected');
 
@@ -86,7 +88,6 @@ export default function LoaderScreen({ navigation }) {
     const valueToken = await AsyncStorage.getItem('token')
 
     if(valueFirstLaunch) {
-    
       if(valueToken) {
         const valuePermission = await AsyncStorage.getItem('permission')
         if(valuePermission === 'teacher') {
@@ -99,7 +100,7 @@ export default function LoaderScreen({ navigation }) {
           const user = await axios.post(`${host}/teacher/getUserFromToken`, {token: valueToken, permission: 'supervisor'})
           addStudentList(user.data._id)
           dispatch(addUser(user.data))
-          navigation.replace('Home');
+          navigation.replace('SupervisorHome');
         } else {
           const user = await axios.post(`${host}/users/getUserFromToken`, {token: valueToken, permission: 'user'})
           dispatch(addUser(user.data))
@@ -121,12 +122,20 @@ export default function LoaderScreen({ navigation }) {
     animataLotte.current.play();
   },[])
 
-  // React.useEffect(() => {
-  //   database.ref('location')
-  //   .on('idSupervisor', (snapshot) => {
-  //     console.log(snapshot.val());
+  React.useEffect(() => {
+  // database.collection('location').onSnapshot(query => {
+  //   query.forEach((doc) => {
+  //     console.log(doc.data());
   //   })
-  // },[])
+  // })
+  // database.collection('location').add({
+  //   locationById: {
+  //     id: '123',
+  //     lat: Number(1.232),
+  //     lng: Number(123.23)
+  //   }
+  // })
+  },[])
 
   const timer = setInterval(() => {
     // handleChangePage()

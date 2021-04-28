@@ -13,6 +13,8 @@ import {
   Alert
 } from 'react-native';
 import { BarCodeScanner } from 'expo-barcode-scanner';
+import * as ImagePicker from 'expo-image-picker';
+
 // import Modal from 'react-native-modal';
 // icon store
 import { FontAwesome5 } from '@expo/vector-icons'; 
@@ -62,9 +64,11 @@ export default function ScanScreen({ navigation, route }) {
   const [scanned, setScanned] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
   const [studentData, setStudentData] = useState();
+  const [tokens, setTokens] = useState([])
   const [parentsData, setParentsData] = useState();
   const [classData, setClassData] = useState();
   const [teacherData, setTeacherData] = useState();
+  const [pictureOther, setPictureOther] = useState("");
 
   const toggleModal = () => {
     setModalVisible(!isModalVisible);
@@ -95,7 +99,6 @@ export default function ScanScreen({ navigation, route }) {
           },
       }))
     }   
-    
 
     const isList = await axios.post(`${host}/registerbus/showAllList`)
     const dateNow = new Date(isSchedule.data.date).getDate()+"/"+new Date(isSchedule.data.date).getMonth()
@@ -118,14 +121,61 @@ export default function ScanScreen({ navigation, route }) {
     })
   }
   
-  const alertQR = (name) => {
+  const alertQR = async (name) => {
+    const type = route.params.type === "OnBus" ? 1 : 0
+    await tokens.map(item => {
+      sendPushNotification(item.tokenDevices, name, type)
+    })
+
+    await axios.post(`${host}/notification/create`, { 
+      parentsId: parentsData._id,
+      title: type ? 'LÊN XE' : 'XUỐNG XE',
+      content: `${name} đã điểm danh ${type ? 'lên xe' : 'xuống xe'}`,
+      picture: pictureOther
+    })
+
     Alert.alert(
       "Thành công!",
       `${name} đã ghi danh thành công!`,
       [
         { text: "OK" }
       ]
-  );
+    );
+  }
+
+  const selectedPicture = async (file) => {
+    const localUri = file;
+        const filename = localUri.split('/').pop();
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `image/${match[1]}` : `image`;
+        const formData = new FormData();
+        const dataPicture = JSON.parse(JSON.stringify({ uri: localUri, name: filename, type }));
+        const config = { headers: { 'Content-Type': 'multipart/form-data' } };
+        
+        formData.append('photo', dataPicture);
+
+        // end upload image
+
+        const changeInfo = await axios.post(`${host}/teacher/handlePicture`, formData, config)
+        const { data, error } = changeInfo;
+        if(!error) {
+          setPictureOther(data.uri)
+        } else {
+            console.log(error);
+        }
+  }
+
+  const onCamera = async () => {
+    let result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      aspect: [4, 4],
+      quality: 1,
+    })
+  
+    if (!result.cancelled) {
+      selectedPicture(result.uri)
+    }
   }
 
   const ModalComponent = () => {
@@ -150,9 +200,7 @@ export default function ScanScreen({ navigation, route }) {
                   >
                     <Text style={{ color: '#6D2EF3', fontWeight: 'bold', fontSize: 15  }}>Thẻ học sinh</Text>
                 </LinearGradient>
-                {/* <View style={{ backgroundColor: '#2980B9', justifyContent: 'center', alignItems: 'center', padding: 10 }}>
-                    <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15f  }}>Thẻ học sinh</Text>
-                </View> */}
+          
                 <View style={{ padding: 15 }}>
                   <View style={{ width: '100%', flexDirection: 'row' }}>
                     <View style={{ width: 88, height: 120, borderWidth: 1, }}>
@@ -194,46 +242,93 @@ export default function ScanScreen({ navigation, route }) {
                   </View>    
                 </View>
                 
-                <View style={{ justifyContent: 'center', paddingHorizontal: 10 }}>
-                    <Text style={{ color: '#2980B9', fontWeight: 'bold', fontSize: 18  }}>Thông tin người đón</Text>
-                </View>
-                <View style={{ padding: 15 }}>
-                  <View style={{ width: '100%', flexDirection: 'row' }}>
-                    <View style={{ width: '30%', height: 120, borderWidth: 1, }}>
-                            {/* Image */}
+                {
+                  route.params.type !== "OnBus" && scheduleInfo.process.destination === 2
+                  ?
+                  <>
+                    <View style={{ justifyContent: 'center', paddingHorizontal: 10 }}>
+                        <Text style={{ color: '#2980B9', fontWeight: 'bold', fontSize: 18  }}>Thông tin phụ huynh</Text>
                     </View>
-                    <View style={{ width: '70%', paddingLeft: 15 }}>
-                     
-                      <View style={{ borderBottomWidth: 1, borderBottomColor: '#839192', marginBottom: 5 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3}}>
-                          <Text style={{ color: '#839192', fontSize: 13 }}>Họ và tên: </Text>
-                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>
-                              {/* Ho ten */}
-                          </Text>
+                    <View style={{ padding: 15 }}>
+                      <View style={{ width: '100%', flexDirection: 'row' }}>
+                        <View style={{ width: '30%', height: 120, borderWidth: 1, }}>
+                            {
+                              pictureOther
+                              ? <Image source={{ uri: `${host}/${pictureOther}` }} style={{ width: '30%', height: 120 }}/>
+                              :parentsData
+                              ?
+                                parentsData.avatar
+                                ?
+                                <Image source={{ uri: `${host}/${parentsData.avatar}` }} style={{ width: '30%', height: 120 }}/>
+                                : null
+                              :null
+                            }
                         </View>
-                      </View>
+                        <View style={{ width: '70%', paddingLeft: 15 }}>
+                        
+                          <View style={{ borderBottomWidth: 1, borderBottomColor: '#839192', marginBottom: 5 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3}}>
+                              <Text style={{ color: '#839192', fontSize: 13 }}>Họ và tên: </Text>
+                              <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>
+                                  {
+                                    parentsData
+                                    ?
+                                    parentsData.myFullName
+                                    : null
+                                  }
+                              </Text>
+                            </View>
+                          </View>
 
-                      <View style={{ borderBottomWidth: 1, borderBottomColor: '#839192', marginBottom: 5 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3}}>
-                          <Text style={{ color: '#839192', fontSize: 13 }}>Giới tính: </Text>
-                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>
-                              {/* Gioi tinh */}
-                          </Text>
+                          <View style={{ borderBottomWidth: 1, borderBottomColor: '#839192', marginBottom: 5 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3}}>
+                              <Text style={{ color: '#839192', fontSize: 13 }}>Giới tính: </Text>
+                              <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>
+                                  {
+                                    parentsData
+                                    ?
+                                    parentsData.gender === "Male"
+                                    ? 'Nam'
+                                    : parentsData.gender === "Female"
+                                    ? 'Nữ'
+                                    : null
+                                    : null
+                                  }
+                              </Text>
+                            </View>
+                          </View>
+
+                          <View style={{ borderBottomWidth: 1, borderBottomColor: '#839192', marginBottom: 5 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3}}>
+                              <Text style={{ color: '#839192', fontSize: 13 }}>Mối quan hệ: </Text>
+                              <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>
+                                  {
+                                    parentsData
+                                    ?
+                                    parentsData.relationship
+                                    : null
+                                  }
+                              </Text>
+                            </View>
+                          </View>
+                          
+                          <View style={{ marginBottom: 5 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3, }}>
+                              <TouchableOpacity style={{ flex: 1, height: 30 }}
+                                onPress={onCamera}
+                              >
+                                <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold', textDecorationLine: 'underline' }}>
+                                    Là người đón hộ
+                                </Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
                         </View>
-                      </View>
-
-                      <View style={{ borderBottomWidth: 1, borderBottomColor: '#839192', marginBottom: 5 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3}}>
-                          <Text style={{ color: '#839192', fontSize: 13 }}>Mối quan hệ: </Text>
-                          <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold' }}>
-                              {/* MQH */}
-                          </Text>
-                        </View>
-                      </View>
-
+                      </View>    
                     </View>
-                  </View>    
-                </View>
+                  </>
+                  : <></>
+                }
                 <View>
                   <View style={{ flexDirection: 'row', margin: 15 }}>
                     <TouchableOpacity
@@ -245,6 +340,7 @@ export default function ScanScreen({ navigation, route }) {
                           loadStudentList()
                           openScan()
                           alertQR(studentData.name)
+                          setPictureOther("");
                         })
                       }
                       }
@@ -272,7 +368,10 @@ export default function ScanScreen({ navigation, route }) {
 
                     <TouchableOpacity
                       style={{ flex: 1/2, height: 50, justifyContent: 'center', alignItems: 'center', marginHorizontal: 10, borderRadius: 30 }}
-                      onPress={openScan}
+                      onPress={() => {
+                        openScan(),
+                        setPictureOther("");
+                      }}
                     >
                         <LinearGradient
                           start={{ x: 0, y: 2 }}
@@ -309,18 +408,18 @@ export default function ScanScreen({ navigation, route }) {
   }, []);
 
   const handleBarCodeScanned = async ({ type, data }) => {
+    setScanned(true);
     var dom1 = data.slice(data.indexOf("/")+2, data.length)
     var dom2 = dom1.slice(dom1.indexOf("/")+1, dom1.length)
     const isStudent = await axios.get(`${host}/${dom2}`)
-    const isParents = await axios.post(`${host}/users/getUserById`, { id: isStudent.data.parentsCode })
-    const isClass = await axios.post(`${host}/class/getClassById`, { id: isStudent.data.classCode })
-    const isTeacher = await axios.post(`${host}/teacher/getUserById`, { id: isStudent.data.teacherCode })
-    setStudentData(isStudent.data)
-    // console.log(isStudent.data);
+    const isParents = await axios.post(`${host}/users/getUserById`, { id: isStudent.data.student.parentsCode })
+    const isClass = await axios.post(`${host}/class/getClassById`, { id: isStudent.data.student.classCode })
+    const isTeacher = await axios.post(`${host}/teacher/getUserById`, { id: isStudent.data.student.teacherCode })
+    setStudentData(isStudent.data.student)
+    setTokens(isStudent.data.tokens)
     setParentsData(isParents.data[0])
     setTeacherData(isTeacher.data)
     setClassData(isClass.data[0])
-    setScanned(true);
     setModalVisible(!isModalVisible);
   };
 
@@ -355,6 +454,26 @@ export default function ScanScreen({ navigation, route }) {
     borderBottomWidth: 3,
     borderColor: '#fff',
   };
+
+  async function sendPushNotification(expoPushToken, name, type) {
+    const message = {
+      to: expoPushToken,
+      sound: 'default',
+      title: type ? 'LÊN XE' : 'XUỐNG XE',
+      body: `${name} đã điểm danh ${type ? 'lên xe' : 'xuống xe'}!`,
+      data: { someData: 'goes here' },
+    };
+  
+    await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Accept-encoding': 'gzip, deflate',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(message),
+    });
+  }
 
   return (
     <View style={styles.container}>

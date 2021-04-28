@@ -8,13 +8,18 @@ import {
     Image,
     ScrollView,
     SafeAreaView,
-    FlatList
+    FlatList,
+    Alert
 } from 'react-native'
 import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps'; 
 import MapViewDirections from 'react-native-maps-directions';
 import { LinearGradient } from 'expo-linear-gradient';
 import RNPickerSelect from 'react-native-picker-select';
+import BusStopIcon from '../assets/icons/bus-stop.png'
+import BusLocation from '../assets/icons/signboard.png'
+import SchoolIcon from '../assets/icons/school.png'
+
 
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -30,15 +35,17 @@ import { Feather } from '@expo/vector-icons';
 import { MaterialIcons } from '@expo/vector-icons';
 import { FontAwesome } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
+import { database } from '../assets/host/firebase'
 // close icon
 const GOOGLE_MAPS_APIKEY = '…';
 
 const GpsFollowScreen = ({ navigation }) => {
-    const user = useSelector(state => state.userReducer)
+    const user = useSelector(state => state.userReducer.data)
 
     const [location, setLocation] = React.useState(null);
     const [errorMsg, setErrorMsg] = React.useState(null);
     const [mapRegion, setMapRegion] = React.useState(null);
+    const [status, setStatus] = React.useState(2);
     const [schoolRegion, setSchoolRegion] = React.useState({
         title: "Trường học",
         // description:: "Địa điểm đến"
@@ -48,10 +55,11 @@ const GpsFollowScreen = ({ navigation }) => {
         },
         icon: 'school'
     });
-    mapView = null
+
     const [stationRegion, setStationRegion] = React.useState([]);
 
     React.useEffect(() => {
+        getData(),
         (async () => {
           let { status } = await Location.requestPermissionsAsync();
           if (status !== "granted") {
@@ -60,117 +68,121 @@ const GpsFollowScreen = ({ navigation }) => {
     
           let location = await Location.getCurrentPositionAsync({});
           setLocation(location);
-    
-          setMapRegion({
-            longitude: location.coords.longitude,
-            latitude: location.coords.latitude,
-            longitudeDelta: 0.0922,
-            latitudeDelta: 0.0421
-          });
         })();
-      }, []);
+    }, []);
 
-    return (
-        <View style={styles.container}>
-            <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <View style={styles.goBackHeader}>
-                        <FontAwesome5 name="angle-left" size={30} color="#6495ED"/>
-                    </View>
-                </TouchableOpacity>
-                
-                <View style={styles.titleHeader}>
-                    <Text style={styles.titleHeader_text}>Theo dõi GPS</Text>
-                </View>
-                
-                <TouchableOpacity
-                    onPress={() => navigation.navigate("Message")}
-                >
-                    <View style={styles.RealtimeChatHeader}>
-                        <AntDesign name="message1" size={22} color="#6495ED" />
-                        <Text style={styles.RealtimeChatHeader_text}>9</Text>
-                    </View>
-                </TouchableOpacity>
-            </View>  
-                
-            <View style={styles.body}> 
-                <MapView initialRegion={mapRegion} style={styles.mapView}>
-                    {
-                        mapRegion
-                        ?
-                        <Marker 
-                            coordinate={{
-                                longitude: mapRegion.longitude,
-                                latitude: mapRegion.latitude
-                            }} 
-                            title="Tôi" description="this is description">
-                            <MaterialCommunityIcons name="bus-school" size={22} color="black" />
-                            {/* <View style={styles.circle}>
-                                <View style={styles.stroke} />
-                                <View style={styles.core} />
-                            </View> */}
-                        </Marker>
-                        : null
-                    }
-                    {/* school */}
-                    {
-                        schoolRegion
-                        ?
-                        <Marker 
-                            coordinate={schoolRegion.location} 
-                            title={schoolRegion.title}
-                        >
-                            <FontAwesome5 name="map-marker-alt" size={26} color="red" />
-                        </Marker>
-                        : null
-                    }
-
-                    {/* {
-                        (schoolRegion && mapRegion)
-                        ?
-                        <>
-                        <MapViewDirections
-                            origin={{
-                                longitude: mapRegion.longitude,
-                                latitude: mapRegion.latitude
-                            }}
-                            // waypoints={ (this.state.coordinates.length > 2) ? this.state.coordinates.slice(1, -1): null}
-                        
-                            destination={schoolRegion.location}
-                            // apikey={GOOGLE_MAPS_APIKEY}
-                            strokeWidth={3}
-                            strokeColor="hotpink"
-                            optimizeWaypoints={true}
-                            onStart={(params) => {
-                            console.log(`Started routing between "${params.origin}" and "${params.destination}"`);
-                            }}
-                            onReady={result => {
-                            console.log(`Distance: ${result.distance} km`)
-                            console.log(`Duration: ${result.duration} min.`)
-                
-                            mapView.fitToCoordinates(result.coordinates, {
-                                edgePadding: {
-                                right: (width / 20),
-                                bottom: (height / 20),
-                                left: (width / 20),
-                                top: (height / 20),
-                                }
+    const getData = async () => {
+        const getInfo = await axios.post(`${host}/registerbus/show`, { id: user._id })    
+        const { data } = getInfo;
+        if(data) {
+            var currentDate;
+            data.listBookStation.map(item => {
+                if(new Date().getDate() === (new Date(item.date)).getDate()) {
+                    currentDate = item
+                } 
+            })
+            
+            if(currentDate) {
+                database.collection('location').onSnapshot(query => {
+                    query.forEach((doc) => {
+                        if(doc.data().locationById.id === currentDate.supervisorId) {
+                            setStatus(1)
+                            setMapRegion({
+                                longitude: doc.data().locationById.lng,
+                                latitude: doc.data().locationById.lat,
+                                longitudeDelta: 0.0922,
+                                latitudeDelta: 0.0421
                             });
-                            }}
-                            onError={(errorMessage) => {
-                            // console.log('GOT AN ERROR');
-                            }}
-                        
-                        />
-                        {console.log(schoolRegion)}
-                        </>
-                        : null
-                    } */}
-                </MapView>
+                        } 
+                    })
+                })
+            } else {
+                Alert.alert(
+                    "Thất bại",
+                    "Định vị không có sẵn",
+                    [
+                      { text: "OK", onPress: () => navigation.goBack() }
+                    ]
+                );
+            }
+        } 
+        else {
+            Alert.alert(
+                "Thất bại",
+                "Định vị không có sẵn",
+                [
+                  { text: "OK", onPress: () => navigation.goBack() }
+                ]
+            );
+        }
+        
+    }
+
+    if(status == 1) {
+        return (
+            <View style={styles.container}>
+                <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <View style={styles.goBackHeader}>
+                            <FontAwesome5 name="angle-left" size={30} color="#6495ED"/>
+                        </View>
+                    </TouchableOpacity>
+                    
+                    <View style={styles.titleHeader}>
+                        <Text style={styles.titleHeader_text}>Theo dõi GPS</Text>
+                    </View>
+                    
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate("Message")}
+                    >
+                        <View style={styles.RealtimeChatHeader}>
+                            <AntDesign name="message1" size={22} color="#6495ED" />
+                            <Text style={styles.RealtimeChatHeader_text}>9</Text>
+                        </View>
+                    </TouchableOpacity>
+                </View>  
+                    
+                <View style={styles.body}> 
+                    <MapView initialRegion={mapRegion} style={styles.mapView}>
+                        {
+                            mapRegion
+                            ?
+                            <Marker 
+                                coordinate={{
+                                    longitude: mapRegion.longitude,
+                                    latitude: mapRegion.latitude
+                                }} 
+                                title="Xe Bus" description="Vị trí hiện tại">
+                                <Image source={BusStopIcon} style={{ width: 32, height: 32 }} />
+                            </Marker>
+                            : null
+                        }
+                        {/* school */}
+                        {
+                            schoolRegion
+                            ?
+                            <Marker 
+                                coordinate={schoolRegion.location} 
+                                title={schoolRegion.title}
+                            >
+                                <Image source={SchoolIcon} style={{ width: 32, height: 32 }} />
+                            </Marker>
+                            : null
+                        }
+                    </MapView>
+                </View>
             </View>
-        </View>
-    )
+        )
+    } else {
+        return (
+            <View>
+                    
+            </View>
+        )
+    }
+
+    
 }
 
 export default GpsFollowScreen;

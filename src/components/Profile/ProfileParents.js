@@ -294,7 +294,6 @@ const ProfileParentsScreen = ({ navigation }) => {
                 onPress={() => bs1.current.snapTo(1)}>
                 <Text style={styles.panelButtonTitle}>Cancel</Text>
             </TouchableOpacity>
-            
         </View>
     )
 

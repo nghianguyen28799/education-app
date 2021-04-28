@@ -27,13 +27,13 @@ import { Ionicons } from '@expo/vector-icons';
 // close icon store
 import backgroundHeader from '../../assets/images/background-parents-home.png';
 import KidWelcome from '../../assets/images/kid-welcome.jpg';
+import { database } from '../../assets/host/firebase'
 const window = Dimensions.get("window");
 const screen = Dimensions.get("screen");
 
 const { width, height } = screen;
 
 const TeacherHomePage = ({navigation}) => {
-
     
     return (
         <View style={styles.container}>
@@ -97,7 +97,7 @@ const TeacherHomePage = ({navigation}) => {
                         </TouchableOpacity>
                         <TouchableOpacity 
                             style={styles.each_category_space}
-                            onPress={() => navigation.navigate("ChatListForParents")}
+                            onPress={() => navigation.navigate("Message")}
                         >
                             <View style={styles.each_category}>
                                 <View style={styles.icon_category_border}>
@@ -180,7 +180,9 @@ const TeacherHomePage = ({navigation}) => {
                             </View>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.each_category_space}
-                            onPress={() => navigation.navigate("GpsFollow")}
+                            onPress={() =>
+                                navigation.navigate("GpsFollow")
+                            }
                         >
                             <View style={styles.each_category}>
                                 <View style={styles.icon_category_border}>

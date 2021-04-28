@@ -211,8 +211,6 @@ const MessageScreen = ({ navigation, route }) => {
 
 
 
-
-
     
     
     
@@ -330,7 +328,9 @@ const MessageScreen = ({ navigation, route }) => {
             <View style={styles.header}>
             <StatusBar backgroundColor="#00a6b5c9" barStyle="light-content" />
             <TouchableOpacity
-                onPress={() => navigation.goBack()}
+                onPress={() => {
+                  navigation.goBack()
+                }}
             >
                 <View style={styles.goBackHeader}>
                     <FontAwesome5 name="angle-left" size={30} color="#fff"/>

@@ -86,7 +86,6 @@ const ProfileTeacherScreen = ({ navigation }) => {
                 </View>
             </Modal>
         )
-        
     }
 
 

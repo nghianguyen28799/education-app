@@ -9,12 +9,15 @@ import {
     ScrollView,
     SafeAreaView,
     Dimensions,
-    FlatList
+    FlatList,
+    Alert,
+    ImageBackground
 } from 'react-native'
 
 import axios from 'axios';
 import host from '../assets/host';
 import { useDispatch, useSelector } from 'react-redux'
+import { addStudent, initialStudent } from '../actions/attendanceListAction'
 
 // icon store
 import { FontAwesome5 } from '@expo/vector-icons'; 
@@ -26,8 +29,10 @@ import { FontAwesome } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
 
 // close icon store
-// import MaleNoneAvatar from '../assets/images/male-none-avatar.png'
-// import FemaleNoneAvatar from '../assets/images/female-none-avatar.png'
+import MaleNoneAvatar from '../assets/images/male-none-avatar.png'
+import FemaleNoneAvatar from '../assets/images/female-none-avatar.png'
+import backgroundImg from '../assets/images/background-login.jpg'
+
 const window = Dimensions.get("window");
 const screen = Dimensions.get("screen");
 
@@ -89,94 +94,182 @@ const TeacherHomePage = ({ navigation, route }) => {
     weekday[5] = "friday";
     weekday[6] = "saturday";
 
-    const getDay = weekday[d.getDay()];
-    const [subject, setSubject] = React.useState([]);
     const [isDay, setDay] = React.useState(new Date().getDay())
-    const [isDate, setDate] = React.useState([])
-
+    const [status, setStatus] = React.useState(false);
+    const [absenceData, setAbsenceData] = React.useState([]);
+    
     const getData = async () => {
-        const classCode = user.ClassCode;
-        const isSchedule = await axios.post(`${host}/schedule/show`, { classCode: classCode })
-        const dayList = isSchedule.data.DayList
-        for (const [key, value] of Object.entries(dayList)) {
-            const getKey = key.slice(0, key.length-1);
-            if(getKey === getDay) {
-                setSubject(previous => [...previous, value])
-            }
+        const info = await axios.post(`${host}/noattendance/show`, { 
+            classCode: user.ClassCode
+        })
+ 
+        if(Object.entries(info.data).length !== 0) {
+            setStatus(true)
         }
     }
 
-    const getMonday = (d) => {
-        d = new Date(d);
-        var day = d.getDay(),
-            diff = d.getDate() - day + (day == 0 ? -6:1); // adjust when day is sunday
-        const dateArr = [];
-        for(let i=0 ; i<7 ; i++) {
-            dateArr.push(new Date(d.setDate(diff)).getDate() + i)
-        }
-        setDate(dateArr);
-      }
+    const getAttendanced = () => {
+        let qty = 0;
+        studentList.map(item => {
+            qty += ((new Date(item.data.attendanceDay)).getDate() === new Date().getDate() && item.data.attendanceStatus )?1:0
+        })
+        return qty
+    }
 
+    const getAbsence = async() => {
+        setAbsenceData([])
+        const absenceList = await axios.post(`${host}/absence/show`, { classCode: user.ClassCode })
+        const newData = [];
+        absenceList.data.map(item => {
+            axios.post(`${host}/student/getStudentByParentsId`, {id: item.parentsId})
+            .then(res => {
+                setAbsenceData(previous => [...previous, {
+                    studentId: res.data._id,
+                    lessons: item.lessons,
+                    reason: item.reason
+                }])
+            })
+        })
+    }
+    
     React.useEffect(() => {
         getData()
-        getMonday(new Date())
+        getAbsence()
     },[]);
 
-    const handleChangeDay = async (valueDay) => {
-        setDay(valueDay)
-        setSubject([]);
-        const getDay = weekday[valueDay];
-        const classCode = user.ClassCode;
-        const isSchedule = await axios.post(`${host}/schedule/show`, { classCode: classCode })
-        const dayList = isSchedule.data.DayList
-        for (const [key, value] of Object.entries(dayList)) {
-            const getKey = key.slice(0, key.length-1);
-            if(getKey === getDay) {
-                setSubject(previous => [...previous, value])
+    const alertAttendance = () => {
+        let qty = 0;
+        studentList.map(item => {
+            const check = absenceData.some(value => value.studentId === item.data._id);
+            if((new Date(item.data.attendanceDay)).getDate() !== new Date().getDate()) {
+                qty += check?0:1
             }
-        }
+        })
+
+        Alert.alert(
+            "Thông báo!",
+            `Còn ${qty} học sinh chưa điểm danh`,
+            [
+                { text: "Trở lại" },
+                { text: "Xác nhận", onPress: () => handleAttendance() }
+            ]
+        );
     }
+
+    const alertSuccess = () => {
+        setStatus(true)
+        Alert.alert(
+            "Thành công!",
+            `Buổi điểm danh đã xác nhận!`,
+            [
+                { text: "OK" },
+            ]
+        );
+    }
+
+    const handleAttendance = async () => {
+        const fetchData = await studentList.filter(item => {
+            return (new Date(item.data.attendanceDay)).getDate() !== new Date().getDate() && !absenceData.some(value => value.studentId === item.data._id)
+        })
+        const newData = await fetchData.map(item => {
+            return {
+                ...item,
+                reason: ""
+            }
+        })
+       
+        axios.post(`${host}/noattendance/create`, { classCode: user.ClassCode, studentList: newData })
+        .then((res) => {
+            res.data.map(item => {
+                if(item.tokens.length === 0) {
+                    axios.post(`${host}/notification/create`, { 
+                        parentsId: item.parentsCode,
+                        title: "Vắng điểm danh",
+                        content: `${item.name} đã vắng điểm danh!`,
+                    })
+                } else {
+                    item.tokens.map(value => {
+                        sendPushNotification(value.tokenDevices, item.name)
+                    })
+                    axios.post(`${host}/notification/create`, { 
+                        parentsId: item.parentsCode,
+                        title: "Vắng điểm danh",
+                        content: `${item.name} đã vắng điểm danh!`,
+                    })
+                } 
+            })
+            alertSuccess()
+            loadStudentList()
+        })
+    }
+
+    const loadStudentList = async () => {
+        dispatch(initialStudent());
+        const isStudentList = await axios.post(`${host}/student/getStudentByClassCode`, { classCode: user.ClassCode })
+        isStudentList.data.map(item => {
+          dispatch(addStudent(item))
+        })
+      }
 
     const renderItem = ({item}) => (
         <View style={styles.body_area_content_area}>
             <View style={styles.body_area_content_left}>
                 <View style={styles.body_area_content_left_child}>
-                    <Text style={{
-                        fontSize: 15, fontWeight: 'bold'
-                    }}>
-                        {item.start}
-                    </Text>
-                    <Text style={{
-                        color: '#4D5656',
-                        fontWeight: 'bold'
-                    }}>
-                        {item.session}
-                    </Text>    
+                    <View style={styles.body_area_content_avt_box}>
+                        <Image source={
+                            item.data.avatar ? {uri: `${host}/${item.data.avatar}`} 
+                            : item.data.gender === 'Male' ? MaleNoneAvatar
+                            : item.data.gender === 'Female' ? FemaleNoneAvatar
+                            : null
+                        } 
+                         style={styles.body_area_content_avt_box}
+                        />
+                    </View>
                 </View>
             </View>
 
             <View style={styles.body_area_content_right}>
                 <View style={styles.body_area_content_right_child}>
-                    <Text style={{
-                        fontSize: 16,
-                        fontWeight: 'bold', 
-                        color: '#4D5656',
-                        marginVertical: 5
-                    }}>
-                        {item.start} - {item.end}
+                    <Text style={{ fontSize: 13, fontWeight: 'bold' }}>
+                        {item.data.name}
                     </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'flex-end'}}>
-                        <Text style={{ fontSize: 12, color: '#979A9A' }}>Môn giảng dạy: </Text>
-                        <Text style={{ fontWeight: 'bold' }}>{subject[item.serial-1]}</Text>
-                    </View>
+                    {item.data.attendanceDay.attendanceStatus}
+                    {
+                        absenceData.some(value => value.studentId === item.data._id)
+                        ?
+                        <View>
+                            <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#E67E22'}}>Vắng có phép</Text>
+                            <View style={{ flexDirection: 'row' }}>
+                                <Text style={{ fontSize: 12, fontWeight: 'bold' }}>Tiết: </Text>
+                                <Text style={{ fontSize: 12 }}>
+                                    {
+                                        (absenceData.find(element => element.studentId === item.data._id).lessons).map((value, index) => (
+                                            (absenceData.find(element => element.studentId === item.data._id).lessons).length == index+1 ? value : value+","
+                                        ))
+                                    }
+                                </Text>
+                            </View>
+                            <Text style={{ fontSize: 12}}>Lý do: {absenceData.find(value => value.studentId === item.data._id).reason}</Text>
+                        </View>
+                        :
+                        item.data.attendanceDay
+                        ?
+                            new Date(item.data.attendanceDay).getDate() === new Date().getDate()
+                            ?
+                                item.data.attendanceStatus === true
+                                ? <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#239B56' }}>Đã điểm danh</Text>
+                                : <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#C0392B'}}>Vắng không phép</Text>
+                            : <></>
+                        : <></>
+                    }
                 </View>
             </View>
         </View>
     )
 
     return (
-        <View style={styles.container}>
-            <StatusBar backgroundColor="#ffc41d" barStyle="dark-content" />
+        <ImageBackground source={backgroundImg} style={styles.container}>
+            <StatusBar backgroundColor="#000" barStyle="light-content" />
             <View style={styles.header}>
                 <View style={styles.menu_border}>
                     <View style={styles.menu}>
@@ -196,20 +289,34 @@ const TeacherHomePage = ({ navigation, route }) => {
                         }}>Danh sách điểm danh</Text>
                     </View>
 
-                    <View style={[styles.menu, {opacity: 0}]}>
-                        <View style={styles.goBackHeader}>
-                            <AntDesign name="message1" size={24} color="#000" />
+                    <TouchableOpacity
+                        onPress={() =>
+                            !status ?
+                            navigation.navigate('ScanQRTeacher') :
+                            Alert.alert(
+                                "Thông báo!",
+                                `Điểm danh cho hôm nay đã kết thúc`,
+                                [
+                                    { text: "OK" },
+                                ]
+                            )
+                        }
+                    >
+                        <View style={[styles.menu]}>
+                            <View style={styles.goBackHeader}>
+                                <AntDesign name="qrcode" size={24} color="black" />
+                            </View>
                         </View>
-                    </View>
+                    </TouchableOpacity>
                 </View>
 
                 <View style={styles.container_box}>
                     <View style={styles.container_header_box}>
                         <View style={styles.container_header_left}>
-                            <Entypo name="calendar" size={30} color="black" style={{ marginRight: 10}}/>
-                            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#5F6A6A' }}>8</Text>
+                            <FontAwesome name="calendar-check-o" size={30} color="black" style={{ marginRight: 10}}/>
+                            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#5F6A6A' }}>{new Date().getDate()}</Text>
                             <Text style={{ fontSize: 20, fontWeight: 'bold', marginHorizontal: 5, color: '#000' }}>{n}</Text>
-                            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#5F6A6A' }}>2021</Text>
+                            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#5F6A6A' }}>{new Date().getFullYear()}</Text>
                         </View>
                         <View style={styles.container_header_right}>
                             <Text style={{ fontSize: 13, fontWeight: 'bold' }}>{isDay === new Date().getDay() ? 'Hôm nay' : ''}</Text>
@@ -217,39 +324,113 @@ const TeacherHomePage = ({ navigation, route }) => {
                     </View>
 
                     <View style={styles.container_body_box}>
-                        
+                        <View style={styles.container_body_child1_box}>
+                            <View style={{ flexDirection: 'row' }}>
+                                <Text>Có mặt: </Text>
+                                <Text style={{ fontWeight: 'bold' }}>
+                                    {
+                                        studentList
+                                        ? getAttendanced()
+                                        : 0
+                                    }
+                                    /
+                                    {studentList ? studentList.length : 0}
+                                </Text>
+                            </View>
+                            <View style={{ flex: 1 }} />
+                            {
+                                status 
+                                ?
+                                    <View style={{ flexDirection: 'row' }}>
+                                        <Text>Vắng mặt: </Text>
+                                        <Text style={{ fontWeight: 'bold' }}>{
+                                            studentList
+                                            ?
+                                            studentList.length - getAttendanced() - absenceData.length
+                                            : 0
+                                        }/{studentList ? studentList.length : 0}</Text>
+                                    </View>
+                                : <></>
+                            }
+                            
+                        </View>
+                        <View style={styles.container_body_child2_box}>
+                            <View style={{ flexDirection: 'row' }}>
+                                <Text>Có phép: </Text>
+                                <Text style={{ fontWeight: 'bold' }}>{absenceData.length}/{studentList ? studentList.length : 0}</Text>
+                            </View>
+                            <View style={{ flex: 1 }} />
+                            {
+                                !status
+                                ?
+                                    <TouchableOpacity
+                                        onPress={alertAttendance}
+                                    >
+                                        <Text style={{ fontSize: 12, fontWeight: 'bold', backgroundColor: '#239B56', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, color: '#fff'}}>
+                                            Xác nhận
+                                        </Text>
+                                    </TouchableOpacity>
+                                :  
+                                    <View>
+                                        <Text style={{ fontSize: 12, fontWeight: 'bold', backgroundColor: '#FF0000', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, color: '#fff'}}>
+                                            Đã điểm danh
+                                        </Text>
+                                    </View>
+                            }
+                            
+                        </View>
                     </View>
                 </View>
             </View>
             <View style={styles.body}>
                 <View style={styles.body_area_absolute} />
-        
+
                 <View style={styles.body_area}>
                     {
-                        subject.length >= 8
+                        studentList
                         ?
                         <FlatList
                             showsVerticalScrollIndicator={false}
-                            data={lesson}
+                            data={studentList}
                             renderItem={renderItem}
-                            keyExtractor={item => item.id}
+                            keyExtractor={item => item.data._id}
                         />
                         : <></>
                     }
                 </View>
             </View>
-        </View>
+        </ImageBackground>
     );
 };
+
+async function sendPushNotification(expoPushToken, name) {
+    const message = {
+      to: expoPushToken,
+      sound: 'default',
+      title: 'Vắng điểm danh',
+      body: `${name} đã vắng điểm danh hôm nay!`,
+      data: { someData: 'goes here' },
+    };
+    
+    await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Accept-encoding': 'gzip, deflate',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(message),
+    });
+}
 
 const styles = StyleSheet.create({ 
     container : {
         flex: 1,
-        backgroundColor: '#ffc41d'   
+        // backgroundColor: '#ffc41d'   
     },
 
     header: {
-        height: height*28/100,
+        height: height*20/100,
         paddingHorizontal: 20,
     },
 
@@ -268,7 +449,7 @@ const styles = StyleSheet.create({
     },
     
     container_header_box: {
-        height: "30%",
+        height: "40%",
         flexDirection: 'row', 
     },
 
@@ -285,37 +466,25 @@ const styles = StyleSheet.create({
     },
 
     container_body_box: {
-        height: "70%",
+        height: "60%",
+    },
+
+    container_body_child1_box: {
+        width: "100%",
+        height: '40%',
         flexDirection: 'row',
-
-        justifyContent: 'center',
         alignItems: 'center'
     },
 
-    each_date_box: {
-        height: '60%',
-        flex: 1/7,
-        paddingHorizontal: 2
-    },
-
-    each_date: {
-        flex: 1,
-        borderRadius: 30,
-        backgroundColor: '#fff',
-        justifyContent: 'center',
-        alignItems: 'center'
-    },
-
-    each_date_selected: {
-        backgroundColor: '#212F3C',
-        flex: 1,
-        borderRadius: 30,
-        justifyContent: 'center',
+    container_body_child2_box: {
+        width: "100%",
+        height: '40%',
+        flexDirection: 'row',
         alignItems: 'center'
     },
 
     body: {
-        height: height*72/100,
+        height: height*80/100,
     },
 
     body_area_absolute: {
@@ -336,20 +505,20 @@ const styles = StyleSheet.create({
 
 
     body_area_content_area: {
-        height: 120,
+        height: 100,
         // backgroundColor: 'red',
         marginBottom: 20,
         flexDirection: 'row',
     },
 
     body_area_content_left: {
-        width: '22%',
+        width: '30%',
         height: '100%',
         paddingLeft: 20
     },
 
     body_area_content_left_child: {
-        backgroundColor: '#ffc41d',
+        backgroundColor: '#38f9d6',
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
@@ -357,8 +526,14 @@ const styles = StyleSheet.create({
         borderBottomLeftRadius: 20,
     },
 
+    body_area_content_avt_box: {
+        width: 70,
+        height: 70,
+        borderRadius: 50,
+    },
+
     body_area_content_right: {
-        width: '78%',
+        width: '70%',
         height: '100%',
         paddingRight: 20,
     },
@@ -370,9 +545,9 @@ const styles = StyleSheet.create({
         borderTopRightRadius: 20,
         borderBottomRightRadius: 20,
         paddingVertical: 15,
-        paddingHorizontal: 30,
-        justifyContent: 'center'
-    }
+        paddingHorizontal: 20,
+
+    },
 })
 
 export default TeacherHomePage;
