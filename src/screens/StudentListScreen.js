@@ -11,6 +11,7 @@ import {
     TextInput,
     FlatList,
     Dimensions,
+    Modal,
 } from 'react-native'
 
 import { useSelector } from 'react-redux';
@@ -19,6 +20,7 @@ import host from '../assets/host';
 // icon store 
 import { FontAwesome5 } from '@expo/vector-icons'; 
 import { AntDesign } from '@expo/vector-icons'; 
+import { Ionicons } from '@expo/vector-icons';
 
 import MaleNoneAvatar from '../assets/images/male-none-avatar.png' 
 import FemaleNoneAvatar from '../assets/images/female-none-avatar.png' 
@@ -36,7 +38,9 @@ const ListStudentScreen = ({ navigation }) => {
     const [searchText, setSearchText] = React.useState('');
     const [data, setData] = React.useState([]);
     const [filterData, setFilterData] = React.useState([]);
-
+    const [isModalVisible, setModalVisible] = React.useState(false);
+    const [textTitle, setTextTitle] = React.useState('');
+    const [textContent, setTextContent] = React.useState('');
     const getData = async () => {
         const classCode = user.data.ClassCode;
 
@@ -63,7 +67,6 @@ const ListStudentScreen = ({ navigation }) => {
                 return itemData.indexOf(textData) > -1
             });
             setFilterData(newData);
-   
         }
         else {
             setFilterData(data);
@@ -99,9 +102,92 @@ const ListStudentScreen = ({ navigation }) => {
         </TouchableOpacity>
     );
 
+    const changeModalVisiblity = (bool) => {
+        setModalVisible(bool);
+    }
+
+    const notification = async () => {
+        await data.map(async (item) => {
+            const isParents = await axios.post(`${host}/users/getUserById`, {id: item.parentsCode})
+            const {tokens} = isParents.data[0];
+            addNotification(isParents.data[0]._id);
+            tokens.map(tokenItem => {
+                sendPushNotification(tokenItem.tokenDevices)
+            })
+        })
+
+        setTextTitle('');
+        setTextContent('');
+        changeModalVisiblity(false)
+    }
+
+    async function sendPushNotification(expoPushToken) {
+        const message = {
+          to: expoPushToken,
+          sound: 'default',
+          title: textTitle,
+          body: textContent,
+          data: { someData: 'goes here' },
+        };
+      
+        await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Accept-encoding': 'gzip, deflate',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(message),
+        });
+    }
+
+    const addNotification = (parentsId) => {
+        axios.post(`${host}/notification/create`, {
+            parentsId: parentsId,
+            title: textTitle,
+            content: textContent,
+            picture: '',
+        })
+    }
+
     return (
         <View style={styles.container}>
             <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+            <Modal 
+                transparent={true}
+                animationType="fade"
+                visible={isModalVisible}
+                nRequestClose={() => changeModalVisiblity(false)}
+            >
+                <View
+                    onPress={() => changeModalVisiblity(false)}
+                    style={styles.containerModal}
+                >
+                    <View style={styles.modal}>
+                    <View style={{ width: '100%', flexDirection: 'row', marginBottom: 10 }}>
+                            <Ionicons name="close-sharp" size={24} color="black" style={{ padding: 3, opacity: 0 }} />
+                            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                <Text style={{ fontSize: 15, marginBottom: 10, color: '#148F77', fontWeight: 'bold' }}>Thông báo cho cả lớp</Text>
+                            </View>
+                            <TouchableOpacity
+                                onPress={() => changeModalVisiblity(false)}
+                            >
+                                <Ionicons name="close-sharp" size={24} color="#839192" style={{ padding: 3}} />
+                            </TouchableOpacity>
+                        </View>
+                        <TextInput placeholder="Tiêu đề" value={textTitle} onChangeText={(val) => setTextTitle(val)} style={styles.modalInput} />
+                        <TextInput placeholder="Nội dung" value={textContent} onChangeText={(val) => setTextContent(val)} style={styles.modalInput} />
+                        <TouchableOpacity
+                            style={styles.modalButton}
+                            onPress={() => notification()}
+                        >
+                            <View>
+                                <Text style={{ color: "#fff", fontWeight: "bold" }}>Xác nhận</Text>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
             <View style={styles.header}>
                 <TouchableOpacity
                     onPress={() => navigation.goBack()}
@@ -116,11 +202,10 @@ const ListStudentScreen = ({ navigation }) => {
                 </View>
                 
                 <TouchableOpacity
-                    onPress={() => navigation.navigate("MessageList")}
+                    onPress={() => changeModalVisiblity(true)}
                 >
                     <View style={styles.RealtimeChatHeader}>
-                        <AntDesign name="message1" size={22} color="#6495ED" />
-                        <Text style={styles.RealtimeChatHeader_text}>9</Text>
+                    <AntDesign name="notification" size={24} color="#2980B9" />
                     </View>
                 </TouchableOpacity>
             </View>  
@@ -191,7 +276,6 @@ const styles = StyleSheet.create({
     RealtimeChatHeader: {
         flexDirection: 'row',
         padding: 10,
-        opacity: 0
     },
 
     RealtimeChatHeader_text: {
@@ -231,7 +315,6 @@ const styles = StyleSheet.create({
     },
 
     search_text: {
-
         flex: 1,
         marginHorizontal: 10
     },
@@ -276,5 +359,40 @@ const styles = StyleSheet.create({
         flex: 1,
         width: ((width-60)/3)-15,
         borderRadius: 50,
+    },
+
+    containerModal: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 999,
+        backgroundColor: "rgba(0, 0, 0, 0.2)",
+        // position: 'absolute',
+    },
+
+    modal: {
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        width: width - 30,
+        paddingHorizontal: 20,
+        zIndex: 99,
+        alignItems: 'center',
+        padding: 15
+    },
+
+    modalInput: {
+        borderWidth: 1, 
+        borderRadius: 5, 
+        borderColor: '#A6ACAF', 
+        width: '100%', 
+        paddingHorizontal: 10,
+        marginBottom: 10
+    },
+
+    modalButton: {
+        width: '100%',
+        backgroundColor: "#239B56",
+        alignItems: 'center',
+        paddingVertical: 12
     }
 })

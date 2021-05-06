@@ -131,7 +131,7 @@ export default function ScanScreen({ navigation, route }) {
       parentsId: parentsData._id,
       title: type ? 'LÊN XE' : 'XUỐNG XE',
       content: `${name} đã điểm danh ${type ? 'lên xe' : 'xuống xe'}`,
-      picture: pictureOther
+      picture: pictureOther ? pictureOther : null
     })
 
     Alert.alert(

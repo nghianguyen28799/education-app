@@ -50,7 +50,7 @@ const ChooseStation = ({ navigation }) => {
                 }
             })    
         }
-        const isStation = await axios.post(`${host}/station/show`);
+        const isStation = await axios.get(`${host}/station/show`);
         isStation.data.map(value => {
             setStationData(stationData => [... stationData, { label: value.name, value: value._id }])
         })

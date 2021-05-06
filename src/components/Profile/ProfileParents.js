@@ -11,7 +11,8 @@ import {
     TextInput,
     Dimensions,
     Picker,
-    Modal
+    Modal,
+    FlatList
 } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -23,6 +24,10 @@ import host from '../../assets/host';
 import { FontAwesome5 } from '@expo/vector-icons'; 
 import { AntDesign } from '@expo/vector-icons'; 
 import { Feather } from '@expo/vector-icons';
+import { Entypo } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
+import { Octicons } from '@expo/vector-icons';
+
 import UserCirle from '../../assets/images/user-circle.png'
 import MaleNoneAvatar from '../../assets/images/male-none-avatar.png'
 import FemaleNoneAvatar from '../../assets/images/female-none-avatar.png'
@@ -53,7 +58,8 @@ const ProfileParentsScreen = ({ navigation }) => {
     const [loading, setLoading] = React.useState(false);
     const [imageStudent, setImageStudent] = React.useState(null);
     const [imageParents, setImageParents] = React.useState(null);
-    const [isModalVisible, setModalVisible] = React.useState(false);
+    const [isModalViewRating, setModalViewRating] = React.useState(false);
+    const [ratingData, setRatingData] = React.useState([]);
     
     React.useEffect(() => {
         getStudentById();
@@ -327,6 +333,36 @@ const ProfileParentsScreen = ({ navigation }) => {
             </View>
         </View>
     )
+
+    // Rating */
+
+    const changeModalViewRating = (bool) => {
+        setModalViewRating(bool);
+    }
+
+    const getDataRating = async () => {
+        const isRating = await axios.post(`${host}/rating/show`, { id: parentsData._id })
+        setRatingData(isRating.data)
+    }
+
+    const showRatingView = ({ item }) => (
+        <View style={{ width: '100%', marginBottom: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Entypo name="arrow-long-right" size={24} color="#148F77" />
+                <Text style={{ marginHorizontal: 5, fontSize: 13 }}>
+                    {
+                        (new Date(item.createdAt)).getMinutes()+':'+(new Date(item.createdAt)).getMinutes()+' '+(new Date(item.createdAt)).getDate()+'-'+((new Date(item.createdAt)).getMonth()+1)+'-'+(new Date(item.createdAt)).getFullYear()
+                    }
+                </Text>
+                <View style={{ flex: 1, borderWidth: 0.5 }} />
+            </View>
+            <View>
+                <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#2874A6' }}>{ item.title }</Text>
+                <Text>{ item.content }</Text>
+            </View>
+        </View>
+    )
+
    
     return (
         <ScrollView
@@ -334,6 +370,42 @@ const ProfileParentsScreen = ({ navigation }) => {
         >
             <View style={styles.container}>
                 <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+                {/* Start View Rating Modal */}
+                <Modal 
+                    transparent={true}
+                    animationType="fade"
+                    visible={isModalViewRating}
+                    nRequestClose={() => changeModalViewRating(false)}
+                >
+                    <View
+                        style={styles.containerModal}
+                    >
+                        <View style={styles.modalContainer}>
+                            <View style={[styles.modal, {height: height*2/3}]}>
+                                <View style={{ width: '100%', flexDirection: 'row' }}>
+                                    <Ionicons name="close-sharp" size={24} color="black" style={{ padding: 3, opacity: 0 }} />
+                                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                        <Text style={{ fontSize: 15, marginBottom: 10, color: '#148F77', fontWeight: 'bold' }}>Những đánh giá từ GVCN</Text>
+                                    </View>
+                                    <TouchableOpacity
+                                        onPress={() => changeModalViewRating(false)}
+                                    >
+                                        <Ionicons name="close-sharp" size={24} color="#839192" style={{ padding: 3}} />
+                                    </TouchableOpacity>
+                                </View>
+                                <View style={{ borderWidth: 1, width: 40, marginBottom: 15 }}/>
+                                <View style={{ flex: 1, width: "100%" }}>
+                                    <FlatList
+                                        data={ratingData}
+                                        renderItem={showRatingView}
+                                        keyExtractor={item => item._id}
+                                    />
+                                </View>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
+                {/* End Rating Modal */}
                 <View style={{ width: '100%', height: '100%', position: 'absolute' }}>
                     <BottomSheet 
                         ref={bs1}
@@ -368,9 +440,14 @@ const ProfileParentsScreen = ({ navigation }) => {
                         <Text style={styles.titleHeader_text}>Hồ sơ học sinh</Text>
                     </View>
                     
-                    <TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => {
+                            getDataRating()
+                            changeModalViewRating(true)
+                        }}
+                    >
                         <View style={styles.RealtimeChatHeader}>
-                            <AntDesign name="message1" size={22} color="#6495ED" />
+                            <Octicons name="note" size={26} color="#6495ED" />
                         </View>
                     </TouchableOpacity>
                 </View>  
@@ -381,11 +458,11 @@ const ProfileParentsScreen = ({ navigation }) => {
                             <TouchableOpacity onPress={() => bs2.current.snapTo(0)}>
                                 {
                                     imageParents
-                                    ? <Image source={{ uri: `${host}/${imageStudent}` }} style={{ width: 120, height: 120, borderRadius: 70, borderWidth: 3, borderColor: '#9EBBD0' }}/> 
+                                    ? <Image source={{ uri: `${host}/${imageStudent}` }} style={{ width: 120, height: 120, borderRadius: 70, borderWidth: 2, borderColor: '#9EBBD0' }}/> 
                                     : studentData.gender === "Male"
-                                    ?  <Image source={MaleNoneAvatar} style={{ width: 80, height: 80 }}/> 
+                                    ?  <Image source={MaleNoneAvatar} style={{ width: 120, height: 120 }}/> 
                                     : studentData.gender === "Female"
-                                    ?  <Image source={FemaleNoneAvatar} style={{ width: 80, height: 80 }}/> 
+                                    ?  <Image source={FemaleNoneAvatar} style={{ width: 120, height: 120 }}/> 
                                     : null
                                 }
                             </TouchableOpacity>
@@ -867,7 +944,6 @@ const styles = StyleSheet.create({
 
     RealtimeChatHeader: {
         padding: 10,
-        opacity: 0
     },
 
     body: { 
@@ -994,4 +1070,38 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: 'white',
       },
+
+      modalContainer: {
+        width: width, 
+        height: height,
+        justifyContent: 'center', 
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0, 0.2)'
+    },
+
+    modal: {
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        width: width - 30,
+        paddingHorizontal: 20,
+        zIndex: 99,
+        alignItems: 'center',
+        padding: 15,
+    },
+
+    modalInput: {
+        borderWidth: 1, 
+        borderRadius: 5, 
+        borderColor: '#A6ACAF', 
+        width: '100%', 
+        paddingHorizontal: 10,
+        marginBottom: 10
+    },
+
+    modalButton: {
+        width: '100%',
+        backgroundColor: "#239B56",
+        alignItems: 'center',
+        paddingVertical: 12
+    }
 })

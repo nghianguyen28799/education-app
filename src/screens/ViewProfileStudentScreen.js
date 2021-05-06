@@ -7,7 +7,12 @@ import {
     TouchableOpacity,
     Image,
     ScrollView,
-    SafeAreaView
+    SafeAreaView,
+    Modal,
+    Dimensions,
+    TextInput,
+    Alert,
+    FlatList
 } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -17,23 +22,33 @@ import host from '../assets/host';
 // icon store 
 import { FontAwesome5 } from '@expo/vector-icons'; 
 import { AntDesign } from '@expo/vector-icons'; 
-
+import { Octicons } from '@expo/vector-icons';
 import UserCirle from '../assets/images/user-circle.png'
 import MaleNoneAvatar from '../assets/images/male-none-avatar.png' 
 import FemaleNoneAvatar from '../assets/images/female-none-avatar.png' 
+import { Entypo } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 // close icon
+const window = Dimensions.get("window");
+const screen = Dimensions.get("screen");
+
+const { width, height } = screen;
 const ViewProfileStudentScreen = ({ navigation, route }) => {
     const getGoBack = () => {
         navigation.goBack();
     }
-    // const user = useSelector(state => state.userReducer)
-    // console.log(user);
+    const user = useSelector(state => state.userReducer.data);
+
 
     const { studentData } = route.params
-    
+    const [textTitle, setTextTitle] = React.useState('');
+    const [textContent, setTextContent] = React.useState('');
     const [teacherData, setTeacherData] = React.useState({});
     const [classData, setClassData] = React.useState({});
     const [parentsData, setParentsData] = React.useState({});
+    const [isModalVisible, setModalVisible] = React.useState(false);
+    const [isModalViewRating, setModalViewRating] = React.useState(false);
+    const [ratingData, setRatingData] = React.useState([]);
 
     const getData = async () => {
         try{
@@ -52,12 +67,165 @@ const ViewProfileStudentScreen = ({ navigation, route }) => {
         getData();
     },[])
 
+    const changeModalVisiblity = (bool) => {
+        setModalVisible(bool);
+    }
+
+    const changeModalViewRating = (bool) => {
+        setModalViewRating(bool);
+    }
+
+    const getDataRating = async () => {
+        const isRating = await axios.post(`${host}/rating/show`, { id: parentsData._id })
+        setRatingData(isRating.data)
+    }
+
+    const showRatingView = ({ item }) => (
+        <View style={{ width: '100%', marginBottom: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Entypo name="arrow-long-right" size={24} color="#148F77" />
+                <Text style={{ marginHorizontal: 5, fontSize: 13 }}>
+                    {
+                        (new Date(item.createdAt)).getMinutes()+':'+(new Date(item.createdAt)).getMinutes()+' '+(new Date(item.createdAt)).getDate()+'-'+((new Date(item.createdAt)).getMonth()+1)+'-'+(new Date(item.createdAt)).getFullYear()
+                    }
+                </Text>
+                <View style={{ flex: 1, borderWidth: 0.5 }} />
+            </View>
+            <View>
+                <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#2874A6' }}>{ item.title }</Text>
+                <Text>{ item.content }</Text>
+            </View>
+        </View>
+    )
+
+    const handleRatting = async () => {
+        const isParents = await axios.post(`${host}/users/getUserById`, {id: parentsData._id})
+        const { tokens } = isParents.data[0];    
+        axios.post(`${host}/rating/create`, {
+            parentsId: parentsData._id,
+            title: textTitle,
+            content: textContent,
+            studentId: studentData._id,
+        }).then(async () => {
+            await tokens.map(item => {
+                sendPushNotification(item.tokenDevices)
+            })
+            setTextTitle('');
+            setTextContent('');
+            changeModalVisiblity(false)
+            Alert.alert(
+                "Thành công",
+                "Bạn vừa đánh giá cho học sinh.",
+                [
+                    {
+                        text: "OK",
+                        style: "cancel"
+                    },
+                ],
+              );
+        })
+    }
+
+    async function sendPushNotification(expoPushToken) {
+        const message = {
+          to: expoPushToken,
+          sound: 'default',
+          title: textTitle,
+          body: textContent,
+          data: { someData: 'goes here' },
+        };
+      
+        await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Accept-encoding': 'gzip, deflate',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(message),
+        });
+    }
+    
     return (
         <ScrollView
             showsVerticalScrollIndicator={false}
         >
             <View style={styles.container}>
                 <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+                {/* Start Rating Modal */}
+                <Modal 
+                    transparent={true}
+                    animationType="fade"
+                    visible={isModalVisible}
+                    nRequestClose={() => changeModalVisiblity(false)}
+                >
+                    <View
+                        style={styles.containerModal}
+                    >
+                        <View style={styles.modalContainer}>
+                            <View style={styles.modal}>
+                                <View style={{ width: '100%', flexDirection: 'row', marginBottom: 10 }}>
+                                    <Ionicons name="close-sharp" size={24} color="black" style={{ padding: 3, opacity: 0 }} />
+                                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                        <Text style={{ fontSize: 15, marginBottom: 10, color: '#148F77', fontWeight: 'bold' }}>Đánh giá học sinh</Text>
+                                    </View>
+                                    <TouchableOpacity
+                                        onPress={() => changeModalVisiblity(false)}
+                                    >
+                                        <Ionicons name="close-sharp" size={24} color="#839192" style={{ padding: 3}} />
+                                    </TouchableOpacity>
+                                </View>
+                                <TextInput placeholder="Tiêu đề" value={textTitle} onChangeText={(val) => setTextTitle(val)} style={styles.modalInput} />
+                                <TextInput placeholder="Nội dung" value={textContent} onChangeText={(val) => setTextContent(val)} style={styles.modalInput} />
+                                <TouchableOpacity
+                                    style={styles.modalButton}
+                                    onPress={handleRatting}
+                                >
+                                    <View>
+                                        <Text style={{ color: "#fff", fontWeight: "bold" }}>Xác nhận</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
+                {/* End Rating Modal */}
+                {/* Start View Rating Modal */}
+                <Modal 
+                    transparent={true}
+                    animationType="fade"
+                    visible={isModalViewRating}
+                    nRequestClose={() => changeModalViewRating(false)}
+                >
+                    <View
+                        style={styles.containerModal}
+                    >
+                        <View style={styles.modalContainer}>
+                            <View style={[styles.modal, {height: height*2/3}]}>
+                                <View style={{ width: '100%', flexDirection: 'row' }}>
+                                    <Ionicons name="close-sharp" size={24} color="black" style={{ padding: 3, opacity: 0 }} />
+                                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                        <Text style={{ fontSize: 15, marginBottom: 10, color: '#148F77', fontWeight: 'bold' }}>Những đánh giá từ GVCN</Text>
+                                    </View>
+                                    <TouchableOpacity
+                                        onPress={() => changeModalViewRating(false)}
+                                    >
+                                        <Ionicons name="close-sharp" size={24} color="#839192" style={{ padding: 3}} />
+                                    </TouchableOpacity>
+                                </View>
+                                <View style={{ borderWidth: 1, width: 40, marginBottom: 15 }}/>
+                                <View style={{ flex: 1, width: "100%" }}>
+                                    <FlatList
+                                        data={ratingData}
+                                        renderItem={showRatingView}
+                                        keyExtractor={item => item._id}
+                                    />
+                                </View>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
+                {/* End Rating Modal */}
                 <View style={styles.header}>
                     <TouchableOpacity onPress={getGoBack}>
                         <View style={styles.goBackHeader}>
@@ -69,9 +237,14 @@ const ViewProfileStudentScreen = ({ navigation, route }) => {
                         <Text style={styles.titleHeader_text}>Hồ sơ học sinh</Text>
                     </View>
                     
-                    <TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => {
+                            getDataRating()
+                            changeModalViewRating(true)
+                        }}
+                    >
                         <View style={styles.RealtimeChatHeader}>
-                            <AntDesign name="message1" size={22} color="#6495ED" />
+                            <Octicons name="note" size={26} color="#6495ED" />
                         </View>
                     </TouchableOpacity>
                 </View>  
@@ -182,33 +355,67 @@ const ViewProfileStudentScreen = ({ navigation, route }) => {
                     
                     <View style={{ flex: 1, borderWidth: 1, borderColor: '#D5DBDB', marginVertical: 15}}></View> 
 
-                    <View style={{ flex: 1, height: 50, marginBottom: 15 }}>
-                        <TouchableOpacity 
-                            onPress={() => navigation.navigate('Message', {
-                                studentData: studentData,
-                                parentsData: parentsData,
-                                teacherData: teacherData
-                            })}
-                            style={{ flexDirection: 'row', flex: 1 }}
-                        >
-                            <LinearGradient
-                                start={{ x: 0, y: 1 }}
-                                end={{ x: 0.5, y: 3 }}
-                                colors={['#5499C7', '#5DADE2','#40E0D0']}
-                                style={{ 
-                                    flexDirection: 'row', 
-                                    flex: 1, 
-                                    paddingHorizontal: 20, 
-                                    borderRadius: 40 ,
-                                    alignItems: 'center'
-                                }}
-                            >
-                                <AntDesign name="message1" size={22} color="#D5DBDB" />
-                                <Text style={{ flex: 1, textAlign: 'center', fontWeight: 'bold', color: '#fff' }}>Tin nhắn</Text>
-                                <AntDesign name="message1" size={22} color="#6495ED"  style={{ opacity: 0 }} />
-                            </LinearGradient>
-                        </TouchableOpacity>
-                    </View>                
+                    {
+                        user 
+                        ?
+                            user.permission == 'teacher'
+                            ?
+                            <>
+                                <View style={{ flex: 1, height: 50, marginBottom: 15 }}>
+                                    <TouchableOpacity 
+                                        onPress={() => navigation.navigate('Message', {
+                                            studentData: studentData,
+                                            parentsData: parentsData,
+                                            teacherData: teacherData
+                                        })}
+                                        style={{ flexDirection: 'row', flex: 1 }}
+                                    >
+                                        <LinearGradient
+                                            start={{ x: 0, y: 1 }}
+                                            end={{ x: 0.5, y: 3 }}
+                                            colors={['#5499C7', '#5DADE2','#40E0D0']}
+                                            style={{ 
+                                                flexDirection: 'row', 
+                                                flex: 1, 
+                                                paddingHorizontal: 20, 
+                                                borderRadius: 40 ,
+                                                alignItems: 'center'
+                                            }}
+                                        >
+                                            <AntDesign name="message1" size={22} color="#D5DBDB" />
+                                            <Text style={{ flex: 1, textAlign: 'center', fontWeight: 'bold', color: '#fff' }}>Tin nhắn</Text>
+                                            <AntDesign name="message1" size={22} color="#6495ED"  style={{ opacity: 0 }} />
+                                        </LinearGradient>
+                                    </TouchableOpacity>
+                                </View>
+
+                                <View style={{ flex: 1, height: 50, marginBottom: 15 }}>
+                                    <TouchableOpacity 
+                                        onPress={() => changeModalVisiblity(true)}
+                                        style={{ flexDirection: 'row', flex: 1 }}
+                                    >
+                                        <LinearGradient
+                                            start={{ x: 0, y: 1 }}
+                                            end={{ x: 0.5, y: 3 }}
+                                            colors={['#77A1D3', '#79CBCA', '#e684ae8c' ]}
+                                            style={{ 
+                                                flexDirection: 'row', 
+                                                flex: 1, 
+                                                paddingHorizontal: 20, 
+                                                borderRadius: 40 ,
+                                                alignItems: 'center'
+                                            }}
+                                        >
+                                            <AntDesign name="codesquareo" size={20} color="#D5DBDB" />
+                                            <Text style={{ flex: 1, textAlign: 'center', fontWeight: 'bold', color: '#fff' }}>Viết đánh giá</Text>
+                                            <AntDesign name="message1" size={22} color="#6495ED"  style={{ opacity: 0 }} />
+                                        </LinearGradient>
+                                    </TouchableOpacity>
+                                </View>
+                            </>
+                            : <></>
+                        : <></>
+                    }
 
                     <View style={styles.contentProfile_parents}>
                         <View style={styles.contentProfile_parents_header}>
@@ -405,7 +612,6 @@ const styles = StyleSheet.create({
 
     RealtimeChatHeader: {
         padding: 10,
-        opacity: 0
     },
 
     body: { 
@@ -486,4 +692,38 @@ const styles = StyleSheet.create({
         marginTop: 15,
         paddingHorizontal: 20
     },
+
+    modalContainer: {
+        width: width, 
+        height: height,
+        justifyContent: 'center', 
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0, 0.2)'
+    },
+
+    modal: {
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        width: width - 30,
+        paddingHorizontal: 20,
+        zIndex: 99,
+        alignItems: 'center',
+        padding: 15,
+    },
+
+    modalInput: {
+        borderWidth: 1, 
+        borderRadius: 5, 
+        borderColor: '#A6ACAF', 
+        width: '100%', 
+        paddingHorizontal: 10,
+        marginBottom: 10
+    },
+
+    modalButton: {
+        width: '100%',
+        backgroundColor: "#239B56",
+        alignItems: 'center',
+        paddingVertical: 12
+    }
 })

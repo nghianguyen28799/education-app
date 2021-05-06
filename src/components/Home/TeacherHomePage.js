@@ -73,7 +73,8 @@ const TeacherHomePage = ({ navigation, route }) => {
     var n = month[d.getMonth()];
 
     const [subject, setSubject] = React.useState([]);
-
+    const [isClass, setClass] = React.useState('');
+    const [qty, setQty] = React.useState('');
     const getData = async() => {
         var day = new Date();
         var weekday = new Array(7);
@@ -95,6 +96,15 @@ const TeacherHomePage = ({ navigation, route }) => {
                 setSubject(previous => [...previous, value])
             }
         }
+
+        const classData = await axios.get(`${host}/class/id/${classCode}`)
+
+        const isStudent = await axios.get(`${host}/student`)
+        const studentData = isStudent.data.filter(value => {
+            return value.classCode === classCode
+        })
+        setQty(studentData.length)
+        setClass(classData.data[0].ClassCode)
     }
 
     React.useEffect(() => {
@@ -195,8 +205,14 @@ const TeacherHomePage = ({ navigation, route }) => {
                             </Text>
                         </View>
                         <View style={styles.container_header_intro_area}>
-                            <Text style={{ color: '#4D5656', fontSize: 12 }}>Muốn biết phải hỏi, muốn giỏi phải học</Text>
-                            <Text style={{ color: '#4D5656', fontSize: 12 }}>Có học mới biết, có đi mới đến.</Text>
+                            <Text style={{ color: '#4D5656', fontSize: 12 }}>
+                                <Text style={{ fontWeight: 'bold' }}>GVCN: </Text> 
+                                Lớp {isClass}
+                            </Text>
+                            <Text style={{ color: '#4D5656', fontSize: 12 }}>
+                                <Text style={{ fontWeight: 'bold' }}>Sỉ số: </Text> 
+                                {qty} học sinh
+                            </Text>
                         </View>
                     </View>
 

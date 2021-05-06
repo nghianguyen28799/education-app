@@ -9,7 +9,7 @@ import {
     ScrollView,
     SafeAreaView,
     Dimensions,
-    FlatList
+    Modal,
 } from 'react-native'
 
 import axios from 'axios';
@@ -29,7 +29,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { database } from '../../assets/host/firebase'
 
-import Animated from 'react-native-reanimated';
+import Animated, { set } from 'react-native-reanimated';
 import BottomSheet from 'reanimated-bottom-sheet';
 // import XuanMaiImg from '../../assets/images/xuanmai.jpg';
 import AttendenceScreen from '../../screens/AttendenceScreen';
@@ -40,6 +40,7 @@ const screen = Dimensions.get("screen");
 
 const { width, height } = screen;
 
+
 const SupervisorHomePage = ({ navigation, route }) => {
     const dispatch = useDispatch();
     const bs = React.createRef()
@@ -47,13 +48,14 @@ const SupervisorHomePage = ({ navigation, route }) => {
     const user = useSelector(state => state.userReducer.data)
     const infoStudentList = useSelector(state => state.followReducer.infoStudentList)
     const scheduleInfo = useSelector(state => state.destinationReducer.data)
+
+    const [isModalVisible, setModalVisible] = React.useState(false);
     const [gps, setGps] = React.useState(false);
     const [timer, setTimer] = React.useState();
-    // const [location, setLocation] = React.useState(null);
     const [errorMsg, setErrorMsg] = React.useState(null);
-    // const [mapRegion, setMapRegion] = React.useState(null);
     const [uid, setUid] = React.useState("");
     const [station, setStation] = React.useState([]);
+    const [destination, setDestination] = React.useState({});
 
     const getAttendanceScreen = {
         title: 'Lên xe',
@@ -90,8 +92,29 @@ const SupervisorHomePage = ({ navigation, route }) => {
             setGps(true) 
             setUid(id)
             realtimeGps(id)
-        }
+        } 
+    }
+
+    const checkDestination = async () => {
+        var data = {};
+        await database.collection("destination").where('id', '==',user._id)
+        .get()
+        .then((querySnapshot) => {
+            querySnapshot.forEach((doc) => {
+                data = doc.data()
+            })
+        })
+        .catch((error) => {
+            console.log("Error getting documents: ", error);
+        })
         
+        return data
+    }
+
+    const getDestination = async () => {
+        if(Object.entries(await checkDestination()).length > 0) {
+            setDestination(await checkDestination())
+        }
     }
 
     const getPermission = async () => {
@@ -104,6 +127,7 @@ const SupervisorHomePage = ({ navigation, route }) => {
         getPermission();
         getData() 
         getStation()
+        getDestination();
     },[])
 
     const realtimeGps = (uid) => {
@@ -246,6 +270,116 @@ const SupervisorHomePage = ({ navigation, route }) => {
         });
     }
 
+    const changeModalVisiblity = (bool) => {
+        setModalVisible(bool);
+    }
+
+    const changeDestination = async (data) => {
+        console.log(data);
+        if(Object.entries(destination).length == 0) {
+            database.collection('destination').add({
+                id: user._id,
+                idDes: data._id,
+                name: data.name
+            })
+        } else {
+            var uid = "";
+            await database.collection("destination").where('id', '==',user._id)
+            .get()
+            .then((querySnapshot) => {
+                querySnapshot.forEach((doc) => {
+                    uid = doc.id
+                })
+            })
+            .catch((error) => {
+                console.log("Error getting documents: ", error);
+            })
+            database.collection('destination').doc(uid).update({
+                id: user._id,
+                idDes: data._id,
+                name: data.name
+            })
+        }
+        setDestination(data)
+    }
+
+    const deleteDestination = async () => {
+        var uid = "";
+        await database.collection("destination").where('id', '==',user._id)
+        .get()
+        .then((querySnapshot) => {
+            querySnapshot.forEach((doc) => {
+                uid = doc.id
+            })
+        })
+        .catch((error) => {
+            console.log("Error getting documents: ", error);
+        })
+        database.collection('destination').doc(uid).delete()
+        setDestination({})
+    }
+
+    const ModalPicker = () => {
+        return (
+            <TouchableOpacity
+                onPress={() => changeModalVisiblity(false)}
+                style={styles.containerModal}
+            >
+                <View style={styles.modal}>
+                    <Text
+                        style={{ marginTop: 15, marginBottom: 5, fontSize: 20, }}
+                    >Chọn điểm đến</Text>
+                    {
+                        station 
+                        && 
+                        station.map(item => (
+                            <TouchableOpacity
+                                key={item._id}
+                                style={item._id == destination._id || item._id == destination.idDes ? styles.modal_button_active : styles.modal_button}
+                                onPress={async () => {
+                                        changeDestination(item)
+                                        changeModalVisiblity(false)
+                                    }
+                                }
+                            >
+                                <Text>{ item.name }</Text>
+                            </TouchableOpacity>
+                        ))
+                    }
+                    {/* Start Truong hoc */}
+                    <TouchableOpacity
+                        style={'truonghoc' == destination._id || 'truonghoc' == destination.idDes ? styles.modal_button_active : styles.modal_button}
+                        onPress={async () => {
+                            changeDestination(
+                                {
+                                    _id: "truonghoc",
+                                    name: "Trường học",
+                                },
+                                changeModalVisiblity(false)
+                            )
+                        }}
+                    >
+                        <Text>Trường học</Text>
+                    </TouchableOpacity>
+                    {/* End Truong hoc */}
+
+                    {/* Start Delete */}
+                    <TouchableOpacity
+                        style={styles.modal_button}
+                        onPress={() => {
+                            deleteDestination()
+                            changeModalVisiblity(false)
+                        }}
+                    >
+                        <Text>Kết Thúc</Text>
+                    </TouchableOpacity>
+                    {/* End Delete */}
+
+                </View>
+            </TouchableOpacity>
+        )
+    }
+
     return (
         <View style={{ flex: 1 }} >
             {
@@ -270,6 +404,14 @@ const SupervisorHomePage = ({ navigation, route }) => {
                     }
                     
                 {/* end bottom sheet */}
+                <Modal 
+                    transparent={true}
+                    animationType="fade"
+                    visible={isModalVisible}
+                    nRequestClose={() => changeModalVisiblity(false)}
+                >
+                    <ModalPicker />
+                </Modal>
                 <View style={styles.header}>
                     <TouchableOpacity
                         onPress={() => navigation.openDrawer()}
@@ -609,7 +751,7 @@ const SupervisorHomePage = ({ navigation, route }) => {
 
                                 <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end' }}>
                                     <Text style={{ color: '#2980B9' }}>Điểm đến: </Text>
-                                    <Text style={{ color: '#2980B9', fontWeight: 'bold' }}>Nguyễn Văn Linh</Text>
+                                    <Text style={{ color: '#2980B9', fontWeight: 'bold' }}>{ Object.entries(destination).length>0 ? destination.name : 'Chưa rõ' }</Text>
                                 </View>
 
                             </View>
@@ -721,7 +863,7 @@ const SupervisorHomePage = ({ navigation, route }) => {
                         
                         
                         <TouchableOpacity 
-                            onPress={() => bs.current.snapTo(0)}
+                            onPress={() => changeModalVisiblity(true)}
                         >
                             <View style={styles.each_function_space_middle}>
                                 <View style={styles.each_function_space_icon}>
@@ -980,6 +1122,36 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: 'white',
       },
+      
+      containerModal: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 999,
+        backgroundColor: "rgba(0, 0, 0, 0.2)",
+        // position: 'absolute',
+      },
+
+      modal: {
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        width: width - 30,
+        paddingHorizontal: 20,
+        zIndex: 99
+      },
+      
+      modal_button: {
+          width: '100%',
+          paddingVertical: 15,
+          justifyContent: 'center',
+      },
+
+      modal_button_active: {
+        width: '100%',
+        paddingVertical: 15,
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0,0,0,0.2)'
+    }
 })
 
 export default SupervisorHomePage;

@@ -37,15 +37,17 @@ import { FontAwesome } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
 import { database } from '../assets/host/firebase'
 // close icon
-const GOOGLE_MAPS_APIKEY = '…';
+const GOOGLE_MAPS_APIKEY = 'AIzaSyBHRMxpBKc25CMHY51h1jrnCCm6PjNs62s';
 
 const GpsFollowScreen = ({ navigation }) => {
     const user = useSelector(state => state.userReducer.data)
 
     const [location, setLocation] = React.useState(null);
     const [errorMsg, setErrorMsg] = React.useState(null);
+    const [stationRegion, setStationRegion] = React.useState([]);
     const [mapRegion, setMapRegion] = React.useState(null);
     const [status, setStatus] = React.useState(2);
+    const [destination, setDestination] = React.useState({})
     const [schoolRegion, setSchoolRegion] = React.useState({
         title: "Trường học",
         // description:: "Địa điểm đến"
@@ -55,22 +57,31 @@ const GpsFollowScreen = ({ navigation }) => {
         },
         icon: 'school'
     });
-
-    const [stationRegion, setStationRegion] = React.useState([]);
-
-    React.useEffect(() => {
-        getData(),
-        (async () => {
-          let { status } = await Location.requestPermissionsAsync();
-          if (status !== "granted") {
-            setErrorMsg("Permission to access location was denied");
-          }
     
-          let location = await Location.getCurrentPositionAsync({});
-          setLocation(location);
-        })();
+    
+    React.useEffect(() => {
+        getData();
+        getDestination();
     }, []);
 
+    React.useEffect(() => {
+        (
+            async () => {
+                const isStation = await axios.get(`${host}/station/show`)
+                setStationRegion(isStation.data);
+            }
+        )()
+    },[])
+    
+    const alertExist = () => {
+        Alert.alert(
+            "Thất bại",
+            "Định vị không có sẵn",
+            [
+              { text: "OK", onPress: () => navigation.goBack() }
+            ]
+        );  
+    }
     const getData = async () => {
         const getInfo = await axios.post(`${host}/registerbus/show`, { id: user._id })    
         const { data } = getInfo;
@@ -83,39 +94,101 @@ const GpsFollowScreen = ({ navigation }) => {
             })
             
             if(currentDate) {
-                database.collection('location').onSnapshot(query => {
-                    query.forEach((doc) => {
+                var check = false;
+                await database.collection('location').onSnapshot(query => {
+                    query.forEach(async (doc) => {
                         if(doc.data().locationById.id === currentDate.supervisorId) {
                             setStatus(1)
+                            check = true;
+                          
                             setMapRegion({
                                 longitude: doc.data().locationById.lng,
                                 latitude: doc.data().locationById.lat,
                                 longitudeDelta: 0.0922,
                                 latitudeDelta: 0.0421
                             });
-                        } 
+                        }
+
+                        // start update destination
+                            await database.collection("destination").where('id', '==',currentDate.supervisorId)
+                            .get()
+                            .then((querySnapshot) => {
+                                querySnapshot.forEach(async (doc) => {
+                                const data = doc.data()
+                                const isStation = await axios.get(`${host}/station/show`)
+                                console.log(data.idDes);
+                                    if(data.idDes == 'truonghoc') {
+                                        setDestination({
+                                            gps: {
+                                                latitude: 10.033882853267741, 
+                                                longitude:  105.77985570188193
+                                            }
+                                        })
+                                    } else {
+                                        const des = isStation.data.filter(item => {
+                                            return item._id == data.idDes
+                                        })
+                                        setDestination(des[0])
+                                    }
+                                })
+                            })
+                            .catch((error) => {
+                                console.log("Error getting documents: ", error);
+                            })  
+
+                        // end update destination
                     })
                 })
+                setTimeout(() => {
+                    if(!check) {
+                        alertExist()   
+                    }
+                }, 2000)
             } else {
-                Alert.alert(
-                    "Thất bại",
-                    "Định vị không có sẵn",
-                    [
-                      { text: "OK", onPress: () => navigation.goBack() }
-                    ]
-                );
+                alertExist()
             }
         } 
         else {
-            Alert.alert(
-                "Thất bại",
-                "Định vị không có sẵn",
-                [
-                  { text: "OK", onPress: () => navigation.goBack() }
-                ]
-            );
+            alertExist()
         }
+    }
+
+    const getDestination = async () => {
+        const getInfo = await axios.post(`${host}/registerbus/show`, { id: user._id })    
+        if(getInfo.data){
+            var currentDate;
+            await getInfo.data.listBookStation.map(item => {
+                if(new Date().getDate() === (new Date(item.date)).getDate()) {
+                    currentDate = item
+                } 
+            })
         
+            await database.collection("destination").where('id', '==',currentDate.supervisorId)
+            .get()
+            .then((querySnapshot) => {
+                querySnapshot.forEach(async (doc) => {
+                   const data = doc.data()
+                //    console.log(data);
+                   const isStation = await axios.get(`${host}/station/show`)
+                    if(data.idDes == 'truonghoc') {
+                        setDestination({
+                            gps: {
+                                latitude: 10.033882853267741, 
+                                longitude:  105.77985570188193
+                            }
+                        })
+                    } else {
+                        const des = isStation.data.filter(item => {
+                            return item._id == data.idDes
+                        })
+                        setDestination(des[0])
+                    }
+                })
+            })
+            .catch((error) => {
+                console.log("Error getting documents: ", error);
+            })        
+        } 
     }
 
     if(status == 1) {
@@ -148,14 +221,24 @@ const GpsFollowScreen = ({ navigation }) => {
                         {
                             mapRegion
                             ?
-                            <Marker 
-                                coordinate={{
-                                    longitude: mapRegion.longitude,
-                                    latitude: mapRegion.latitude
-                                }} 
-                                title="Xe Bus" description="Vị trí hiện tại">
-                                <Image source={BusStopIcon} style={{ width: 32, height: 32 }} />
-                            </Marker>
+                            <>
+                                <Marker 
+                                    coordinate={mapRegion} 
+                                    title="Xe Bus" description="Vị trí hiện tại">
+                                    <Image source={BusStopIcon} style={{ width: 32, height: 32 }} />
+                                </Marker>
+                                {
+                                    <MapViewDirections
+                                        origin={mapRegion}
+                                        destination={Object.entries(destination).length !== 0 ? destination.gps : null}
+                                        apikey={GOOGLE_MAPS_APIKEY}
+                                        strokeWidth={3}
+                                        strokeColor="red"
+                                        optimizeWaypoints={true}
+                                    />
+                                }
+                            </>
+                            
                             : null
                         }
                         {/* school */}
@@ -168,6 +251,23 @@ const GpsFollowScreen = ({ navigation }) => {
                             >
                                 <Image source={SchoolIcon} style={{ width: 32, height: 32 }} />
                             </Marker>
+                            : null
+                        }
+                        {
+                            stationRegion
+                            ?
+                            stationRegion.map(item => (
+                                <Marker 
+                                    key={item._id}
+                                    coordinate={{
+                                        longitude: item.gps.longitude,
+                                        latitude: item.gps.latitude
+                                    }} 
+                                    title={item.name} description={item.address}
+                                >
+                                    <Image source={BusLocation} style={{ width: 32, height: 32 }} />
+                                </Marker>
+                            ))
                             : null
                         }
                     </MapView>

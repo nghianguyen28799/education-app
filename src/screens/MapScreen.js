@@ -9,7 +9,9 @@ import {
     ScrollView,
     SafeAreaView,
     FlatList,
-    Alert
+    Alert,
+    Modal,
+    Dimensions
 } from 'react-native'
 import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps'; 
@@ -37,12 +39,20 @@ import { FontAwesome } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
 import { database } from '../assets/host/firebase'
 // close icon
+
+const window = Dimensions.get("window");
+const screen = Dimensions.get("screen");
+
+const { width, height } = screen;
+
 const GOOGLE_MAPS_APIKEY = 'AIzaSyBHRMxpBKc25CMHY51h1jrnCCm6PjNs62s';
 
 const MapScreen = ({ navigation }) => {
     const user = useSelector(state => state.userReducer.data)
 
     const [timer, setTimer] = React.useState()
+    const [station, setStation] = React.useState([]);
+    const [isModalVisible, setModalVisible] = React.useState(false);
     const [location, setLocation] = React.useState(null);
     const [errorMsg, setErrorMsg] = React.useState(null);
     const [mapRegion, setMapRegion] = React.useState(null);
@@ -55,7 +65,8 @@ const MapScreen = ({ navigation }) => {
         },
         icon: 'school'
     });
-    mapView = null
+
+    const [desDatabase, setDesDatabase] = React.useState({})
     const [stationRegion, setStationRegion] = React.useState([]);
 
     React.useEffect(() => {
@@ -74,13 +85,56 @@ const MapScreen = ({ navigation }) => {
             latitudeDelta: 0.0421
           });
         })();
-        realtimeGps()
+        realtimeGps();
+        getDestination();
+        getStation();
     }, []);
+
+    const getStation = async () => {
+        const isStation = await axios.get(`${host}/station/show`)
+        setStation(isStation.data);
+    }
+
+    const checkDestination = async () => {
+        var data = {};
+        await database.collection("destination").where('id', '==',user._id)
+        .get()
+        .then((querySnapshot) => {
+            querySnapshot.forEach((doc) => {
+                data = doc.data()
+            })
+        })
+        .catch((error) => {
+            console.log("Error getting documents: ", error);
+        })    
+        return data
+    }
+
+    const getDestination = async () => {
+        if(Object.entries(await checkDestination()).length > 0) {
+            if((await checkDestination()).idDes == 'truonghoc') {
+                setDesDatabase({
+                    id: 'truonghoc',
+                    name: "Trường học",
+                    gps: {
+                        latitude: 10.033882853267741, 
+                        longitude:  105.77985570188193
+                    },
+                })
+            } else {
+                const idDes = (await checkDestination()).idDes;
+                const isStation = await axios.get(`${host}/station/show`)
+                const data = isStation.data.filter((item) => {
+                    return item._id == idDes
+                })
+                setDesDatabase(data[0])
+            }
+        }
+    }
 
     const realtimeGps = () => {
         setTimer(setInterval(handleData, 5000))
         async function handleData() {
-            console.log('123');
             let location = await Location.getCurrentPositionAsync({});
             setLocation(location);
             setMapRegion({
@@ -100,13 +154,137 @@ const MapScreen = ({ navigation }) => {
             }
         )()
     },[])
+    
+    const changeModalVisiblity = (bool) => {
+        setModalVisible(bool);
+    }
 
-    const origin = {latitude: 37.3318456, longitude: -122.0296002};
-    const destination = {latitude: 37.771707, longitude: -122.4053769};
+    const changeDestination = async (data) => {
+        if(Object.entries(desDatabase).length == 0) {
+            database.collection('destination').add({
+                id: user._id,
+                idDes: data._id,
+                name: data.name
+            })
+        } else {
+            var uid = "";
+            await database.collection("destination").where('id', '==',user._id)
+            .get()
+            .then((querySnapshot) => {
+                querySnapshot.forEach((doc) => {
+                    uid = doc.id
+                })
+            })
+            .catch((error) => {
+                console.log("Error getting documents: ", error);
+            })
+            database.collection('destination').doc(uid).update({
+                id: user._id,
+                idDes: data._id,
+                name: data.name
+            })
+            
+        }
+        setDesDatabase(data)
+    }
+
+    const deleteDestination = async () => {
+        var uid = "";
+        await database.collection("destination").where('id', '==',user._id)
+        .get()
+        .then((querySnapshot) => {
+            querySnapshot.forEach((doc) => {
+                uid = doc.id
+            })
+        })
+        .catch((error) => {
+            console.log("Error getting documents: ", error);
+        })
+        database.collection('destination').doc(uid).delete()
+        setDesDatabase({})
+    }
+
+    const ModalPicker = () => {
+        return (
+            <TouchableOpacity
+                onPress={() => changeModalVisiblity(false)}
+                style={styles.containerModal}
+            >
+                <View style={styles.modal}>
+                    <Text
+                        style={{ marginTop: 15, marginBottom: 5, fontSize: 20, }}
+                    >Chọn điểm đến</Text>
+                    {
+                        station 
+                        && 
+                        station.map(item => (
+                            <TouchableOpacity
+                                key={item._id}
+                                style={item._id == desDatabase._id ? styles.modal_button_active : styles.modal_button}
+                                onPress={async () => {
+                                        changeDestination(item)
+                                        changeModalVisiblity(false)
+                                    }
+                                }
+                            >
+                                <Text>{ item.name }</Text>
+                            </TouchableOpacity>
+                        ))
+                    }
+                    {/* Start Truong hoc */}
+                    <TouchableOpacity
+                        style={desDatabase.id == 'truonghoc' ? styles.modal_button_active : styles.modal_button}
+                        onPress={async () => {
+                            changeDestination(
+                                {
+                                    _id: "truonghoc",
+                                    name: "Trường học",
+                                },
+                                changeModalVisiblity(false)
+                            )
+                            setDesDatabase({
+                                id: 'truonghoc',
+                                name: "Trường học",
+                                gps: {
+                                    latitude: 10.033882853267741, 
+                                    longitude:  105.77985570188193
+                                },
+                            });
+                            changeModalVisiblity(false)
+                        }}
+                    >
+                        <Text>Trường học</Text>
+                    </TouchableOpacity>
+                    {/* End Truong hoc */}
+
+                    {/* Start Delete */}
+                    <TouchableOpacity
+                        style={styles.modal_button}
+                        onPress={() => {
+                            deleteDestination()
+                            changeModalVisiblity(false)
+                        }}
+                    >
+                        <Text>Kết Thúc</Text>
+                    </TouchableOpacity>
+                    {/* End Delete */}
+
+                </View>
+            </TouchableOpacity>
+        )
+    }
 
     return (
         <View style={styles.container}>
             <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+            <Modal 
+                transparent={true}
+                animationType="fade"
+                visible={isModalVisible}
+                nRequestClose={() => changeModalVisiblity(false)}
+            >
+                <ModalPicker />
+            </Modal>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => {
                     navigation.goBack() 
@@ -122,11 +300,10 @@ const MapScreen = ({ navigation }) => {
                 </View>
                 
                 <TouchableOpacity
-                    onPress={() => navigation.navigate("Message")}
+                    onPress={() => setModalVisible(true)}
                 >
                     <View style={styles.RealtimeChatHeader}>
-                        <AntDesign name="message1" size={22} color="#6495ED" />
-                        <Text style={styles.RealtimeChatHeader_text}>9</Text>
+                        <MaterialIcons name="update" size={30} color="#6495ED" />
                     </View>
                 </TouchableOpacity>
             </View>  
@@ -136,14 +313,24 @@ const MapScreen = ({ navigation }) => {
                     {
                         mapRegion
                         ?
-                        <Marker 
-                            coordinate={{
-                                longitude: mapRegion.longitude,
-                                latitude: mapRegion.latitude
-                            }} 
-                            title="Xe Bus" description="Vị trí hiện tại">
-                            <Image source={BusLocation} style={{ width: 32, height: 32 }} />
-                        </Marker>
+                        <>
+                            <Marker 
+                                coordinate={mapRegion} 
+                                title="Xe Bus" description="Vị trí hiện tại">
+                                <Image source={BusLocation} style={{ width: 32, height: 32 }} />
+                            </Marker>
+                            {
+                                <MapViewDirections
+                                    origin={mapRegion}
+                                    destination={Object.entries(desDatabase).length !== 0 ? desDatabase.gps : null}
+                                    apikey={GOOGLE_MAPS_APIKEY}
+                                    strokeWidth={3}
+                                    strokeColor="red"
+                                    optimizeWaypoints={true}
+                                />
+                            }
+                        </>
+                        
                         : null
                     }
                     {/* school */}
@@ -219,7 +406,6 @@ const styles = StyleSheet.create({
 
     RealtimeChatHeader: {
         padding: 10,
-        opacity: 0
     },
     
     RealtimeChatHeader_text: {
@@ -271,5 +457,37 @@ const styles = StyleSheet.create({
         height: 24,
         borderRadius: 50,
         zIndex: 2
+    },
+
+    containerModal: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 999,
+        backgroundColor: "rgba(0, 0, 0, 0.2)",
+        position: 'absolute',
+        width: width, 
+        height: height
+    },
+
+    modal: {
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        width: width - 30,
+        paddingHorizontal: 20,
+        zIndex: 99
+    },
+    
+    modal_button: {
+        width: '100%',
+        paddingVertical: 15,
+        justifyContent: 'center',
+    },
+
+    modal_button_active: {
+        width: '100%',
+        paddingVertical: 15,
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0,0,0,0.2)'
     }
 })

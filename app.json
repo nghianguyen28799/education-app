@@ -23,7 +23,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
-      }
+      },
+      "package": "com.nghianguyen28799.EduProject"
     },
     "web": {
       "favicon": "./assets/favicon.png"
