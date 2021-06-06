@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Dimensions,
   Modal,
+  Alert,
   TextInput
 } from 'react-native';
 
@@ -21,6 +22,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { FontAwesome } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
 import { Easing } from 'react-native-reanimated';
+
 // close icon store
 import axios from 'axios';
 import host from '../assets/host';
@@ -135,6 +137,13 @@ const changePassword = ({ navigation }) => {
           newPass1: false,
           newPass2: false,
         })
+        Alert.alert(
+          "Thành công",
+          "Bạn đã đổi mật khẩu thành công",
+          [
+            { text: "OK", style: "cancel" }
+          ]
+        );
       }
       
     }
@@ -179,6 +188,13 @@ const changePassword = ({ navigation }) => {
           newPass2: false,
         })
         await axios.post(`${host}/history/create`, { id: user.data._id, event:"ChangePassword" })
+        Alert.alert(
+          "Thành công",
+          "Bạn đã đổi mật khẩu thành công",
+          [
+            { text: "OK", style: "cancel" }
+          ]
+        );
       }
     }
 

@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     },
 
     header: {
-        height: height*22/100,
+        height: height*18/100,
         paddingHorizontal: 20,
     },
 
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
     container_header_intro_area: {
         marginLeft: 60,
         height: 60,
-        marginTop: 10
+        // marginTop: 10
     },
 
     // qrcode: {
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
     // },
 
     body: {
-        height: height*75/100,
+        height: height*82/100,
     },
 
     body_area_absolute: {

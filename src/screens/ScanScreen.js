@@ -69,6 +69,7 @@ export default function ScanScreen({ navigation, route }) {
   const [classData, setClassData] = useState();
   const [teacherData, setTeacherData] = useState();
   const [pictureOther, setPictureOther] = useState("");
+  const [otherRequire, setOtherRequire] = useState(false);
 
   const toggleModal = () => {
     setModalVisible(!isModalVisible);
@@ -100,37 +101,38 @@ export default function ScanScreen({ navigation, route }) {
       }))
     }   
 
-    const isList = await axios.post(`${host}/registerbus/showAllList`)
-    const dateNow = new Date(isSchedule.data.date).getDate()+"/"+new Date(isSchedule.data.date).getMonth()
-    
-    isList.data.map(value => {
-        value.listBookStation.map(value2 => {
-            const getDate = (new Date(value2.date)).getDate()+'/'+(new Date(value2.date)).getMonth()
-            if(getDate === dateNow) {
-                axios.post(`${host}/student/getStudentByParentsId`, {id: value.parentsId})
-                .then(res => {
-                  const studentInfo = {
-                    valueparentsId: value.parentsId,
-                    student: res.data,
-                    station: value2
-                  };
-                  dispatch(addInfo(studentInfo))
-                })
-            }    
-        })
+    const isList = await axios.post(`${host}/registerbus/showAllList`, { id })
+        
+    isList.data.map(async (value) => {
+      const studentData = await axios.post(`${host}/student/getStudentByParentsId`, {id: value.parentsId})
+      const updatedData = await axios.post(`${host}/registerbus/updateDate`, {id: value.parentsId})
+      const studentInfo = {
+        valueparentsId: value.parentsId,
+        student: studentData.data,
+        station: {
+          station: value.station,
+          getOnBusFromHouse: value.getOnBusFromHouse,
+          getOutBusFromHouse: value.getOutBusFromHouse,
+          getOnBusFromSchool: value.getOnBusFromSchool,
+          getOutBusFromSchool: value.getOutBusFromSchool,
+        }
+      };  
+      dispatch(addInfo(studentInfo))
     })
   }
   
   const alertQR = async (name) => {
-    const type = route.params.type === "OnBus" ? 1 : 0
+    const type = route.params.type === "OnBus" ? 1 : 0;
+    const destination = scheduleInfo.process.destination === 1 ? "Nhà đến trường" : "Trường về nhà";
     await tokens.map(item => {
-      sendPushNotification(item.tokenDevices, name, type)
+      sendPushNotification(item.tokenDevices, name, type, destination)
     })
-
+    // console.log(pictureOther);
+    const content = !pictureOther ? `${name} đã điểm danh ${type ? 'lên xe' : 'xuống xe'} từ ${destination}` : `${name} đã điểm danh xuống xe từ ${destination} do người thân đón hộ`;
     await axios.post(`${host}/notification/create`, { 
       parentsId: parentsData._id,
       title: type ? 'LÊN XE' : 'XUỐNG XE',
-      content: `${name} đã điểm danh ${type ? 'lên xe' : 'xuống xe'}`,
+      content: content,
       picture: pictureOther ? pictureOther : null
     })
 
@@ -312,13 +314,27 @@ export default function ScanScreen({ navigation, route }) {
                             </View>
                           </View>
                           
+                          {
+                            otherRequire
+                            ?
+                            <View style={{ marginBottom: 5 }}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3, }}>
+                                <Text style={{ flex: 1, textAlign: 'right', color: 'green', fontWeight: 'bold' }}>
+                                    Người nhà đón hộ
+                                </Text>
+                              </View>
+                            </View>
+                            :<></>
+                          }
+                          
+
                           <View style={{ marginBottom: 5 }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3, }}>
                               <TouchableOpacity style={{ flex: 1, height: 30 }}
                                 onPress={onCamera}
                               >
                                 <Text style={{ flex: 1, textAlign: 'right', color: '#2980B9', fontWeight: 'bold', textDecorationLine: 'underline' }}>
-                                    Là người đón hộ
+                                    Camera
                                 </Text>
                               </TouchableOpacity>
                             </View>
@@ -388,7 +404,7 @@ export default function ScanScreen({ navigation, route }) {
                             justifyContent: 'center'
                           }}
                         >
-                        <FontAwesome5 name="check" size={20} color="#EE3121" style={{ marginRight: 5 }}/>
+                        <Entypo name="cross" size={24} color="#EE3121" style={{ marginRight: 5 }}/>
                         <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16}}>Hủy bỏ</Text>
                         </LinearGradient>
                     </TouchableOpacity>
@@ -415,12 +431,18 @@ export default function ScanScreen({ navigation, route }) {
     const isParents = await axios.post(`${host}/users/getUserById`, { id: isStudent.data.student.parentsCode })
     const isClass = await axios.post(`${host}/class/getClassById`, { id: isStudent.data.student.classCode })
     const isTeacher = await axios.post(`${host}/teacher/getUserById`, { id: isStudent.data.student.teacherCode })
+    const registerData = await axios.post(`${host}/registerBus/show`, { id: isStudent.data.student.parentsCode })
     setStudentData(isStudent.data.student)
     setTokens(isStudent.data.tokens)
     setParentsData(isParents.data[0])
     setTeacherData(isTeacher.data)
     setClassData(isClass.data[0])
     setModalVisible(!isModalVisible);
+    const now = new Date().getDate()+"/"+new Date().getMonth();
+    const getDate = (new Date(registerData.data.otherRequirement)).getDate()+"/"+(new Date(registerData.data.otherRequirement)).getMonth();
+    if(now == getDate) {
+      setOtherRequire(true)
+    }
   };
 
   if (hasPermission === null) {
@@ -455,12 +477,13 @@ export default function ScanScreen({ navigation, route }) {
     borderColor: '#fff',
   };
 
-  async function sendPushNotification(expoPushToken, name, type) {
+  async function sendPushNotification(expoPushToken, name, type, destination) {
+    const content = !pictureOther ? `${name} đã điểm danh ${type ? 'lên xe' : 'xuống xe'} từ ${destination}` : `${name} đã điểm danh xuống xe từ ${destination} do người thân đón hộ`;
     const message = {
       to: expoPushToken,
       sound: 'default',
       title: type ? 'LÊN XE' : 'XUỐNG XE',
-      body: `${name} đã điểm danh ${type ? 'lên xe' : 'xuống xe'}!`,
+      body: content,
       data: { someData: 'goes here' },
     };
   

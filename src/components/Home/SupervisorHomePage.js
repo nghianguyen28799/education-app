@@ -48,7 +48,7 @@ const SupervisorHomePage = ({ navigation, route }) => {
     const user = useSelector(state => state.userReducer.data)
     const infoStudentList = useSelector(state => state.followReducer.infoStudentList)
     const scheduleInfo = useSelector(state => state.destinationReducer.data)
-
+    
     const [isModalVisible, setModalVisible] = React.useState(false);
     const [gps, setGps] = React.useState(false);
     const [timer, setTimer] = React.useState();

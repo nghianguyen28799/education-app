@@ -21,7 +21,7 @@ import ImageBackgroundLogin from "../assets/images/background-login.jpg"
 
 import { useDispatch } from 'react-redux';
 import { addUser } from '../actions/userAction'
-import { addInfo } from '../actions/followAction'
+import { addInfo, initialInfo } from '../actions/followAction'
 import { addDestination } from '../actions/destinationAction'
 import { addStudent } from '../actions/attendanceListAction'
 
@@ -131,24 +131,25 @@ const Login = ({ navigation, route }) => {
         }   
         
     
-        const isList = await axios.post(`${host}/registerbus/showAllList`)
-        const dateNow = new Date(isSchedule.data.date).getDate()+"/"+new Date(isSchedule.data.date).getMonth()
+        const isList = await axios.post(`${host}/registerbus/showAllList`, { id })
+        // const dateNow = new Date(isSchedule.data.date).getDate()+"/"+new Date(isSchedule.data.date).getMonth()
         
-        isList.data.map(value => {
-            value.listBookStation.map(value2 => {
-                const getDate = (new Date(value2.date)).getDate()+'/'+(new Date(value2.date)).getMonth()
-                if(getDate === dateNow) {
-                    axios.post(`${host}/student/getStudentByParentsId`, {id: value.parentsId})
-                    .then(res => {
-                      const studentInfo = {
-                        valueparentsId: value.parentsId,
-                        student: res.data,
-                        station: value2
-                      };
-                      dispatch(addInfo(studentInfo))
-                    })
-                }    
-            })
+        isList.data.map(async (value) => {
+          const studentData = await axios.post(`${host}/student/getStudentByParentsId`, {id: value.parentsId})
+          const updatedData = await axios.post(`${host}/registerbus/updateDate`, {id: value.parentsId})
+          const studentInfo = {
+            valueparentsId: value.parentsId,
+            student: studentData.data,
+            station: {
+              station: value.station,
+              getOnBusFromHouse: updatedData.data.getOnBusFromHouse,
+              getOutBusFromHouse: updatedData.data.getOutBusFromHouse,
+              getOnBusFromSchool: updatedData.data.getOnBusFromSchool,
+              getOutBusFromSchool: updatedData.data.getOutBusFromSchool,
+            //   supervisorId: updatedData.data.supervisorId,
+            }
+          };  
+          dispatch(addInfo(studentInfo))
         })
     }
 
@@ -176,6 +177,7 @@ const Login = ({ navigation, route }) => {
             
             if(permission === 'supervisor') {
                 const timer = setInterval(async () => {
+                    dispatch(initialInfo());
                     const user = await axios.post(`${host}/teacher/getUserFromToken`, { token, permission: 'supervisor' })
                     dispatch(addUser(user.data))
                     addStudentList(user.data._id)

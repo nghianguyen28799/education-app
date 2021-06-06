@@ -11,7 +11,8 @@ import {
     Dimensions,
     FlatList,
     Alert,
-    ImageBackground
+    ImageBackground,
+    RefreshControl
 } from 'react-native'
 
 import axios from 'axios';
@@ -64,6 +65,10 @@ const weekdayData = [
     { id: '7aaa', serial: 0, code: 'CN'},
 ]
 
+const wait = (timeout) => {
+    return new Promise(resolve => setTimeout(resolve, timeout));
+}
+
 const TeacherHomePage = ({ navigation, route }) => {
     const dispatch = useDispatch();
     const user = useSelector(state => state.userReducer.data)
@@ -97,17 +102,48 @@ const TeacherHomePage = ({ navigation, route }) => {
     const [isDay, setDay] = React.useState(new Date().getDay())
     const [status, setStatus] = React.useState(false);
     const [absenceData, setAbsenceData] = React.useState([]);
-    
-    const getData = async () => {
-        const info = await axios.post(`${host}/noattendance/show`, { 
-            classCode: user.ClassCode
-        })
- 
-        if(Object.entries(info.data).length !== 0) {
-            setStatus(true)
-        }
-    }
+    // const [student, setStudent] = React.useState([]);
+    const [refreshing, setRefreshing] = React.useState(false);
 
+    const onRefresh = React.useCallback(() => {
+        setRefreshing(true);
+        wait(1000).then(() => {
+            setRefreshing(false);
+            getData();
+        })
+    }, []);
+
+    const getData = async () => {
+        dispatch(initialStudent());
+        console.log('add');
+        const classCode = user.ClassCode;
+        const isStudentList = await axios.post(`${host}/student/getStudentByClassCode`, { classCode })
+        isStudentList.data.map(async(item) => {
+          const isParents = await axios.post(`${host}/users/getUserById`, { id: item.parentsCode })
+          const parentsId = isParents.data[0]._id;
+          const isRegister = await axios.post(`${host}/registerbus/show`, { id: parentsId })
+          if(Object.entries(isRegister.data).length > 0) {
+            const info = {
+              ...item,
+              bus: true,
+              date: isRegister.data.date,
+              getOnBusFromHouse: isRegister.data.getOnBusFromHouse,
+              getOutBusFromHouse: isRegister.data.getOutBusFromHouse,
+              getOnBusFromSchool: isRegister.data.getOnBusFromSchool,
+              getOutBusFromSchool: isRegister.data.getOutBusFromSchool,
+            } 
+            // console.log(info);
+            dispatch(addStudent(info))    
+          } else {
+            const info = {
+              ...item,
+              bus: false,
+            } 
+            dispatch(addStudent(info))    
+          }
+        })
+    }
+  
     const getAttendanced = () => {
         let qty = 0;
         studentList.map(item => {
@@ -133,7 +169,6 @@ const TeacherHomePage = ({ navigation, route }) => {
     }
     
     React.useEffect(() => {
-        getData()
         getAbsence()
     },[]);
 
@@ -214,6 +249,13 @@ const TeacherHomePage = ({ navigation, route }) => {
     const renderItem = ({item}) => (
         <View style={styles.body_area_content_area}>
             <View style={styles.body_area_content_left}>
+                <TouchableOpacity
+                    style = {styles.body_area_content_left_child}
+                    onPress={() => navigation.navigate('ViewProfileStudent', {
+                    studentData: item.data
+                })}
+                    key={item.data._id}
+                >
                 <View style={styles.body_area_content_left_child}>
                     <View style={styles.body_area_content_avt_box}>
                         <Image source={
@@ -224,14 +266,32 @@ const TeacherHomePage = ({ navigation, route }) => {
                         } 
                          style={styles.body_area_content_avt_box}
                         />
+                        <View style={{ marginTop: 3, justifyContent: 'center', alignItems: 'center'}}>
+                            {/* <Text style={{ fontSize: 12 }}>Da diem danh</Text>  */}
+                            {
+                                item.data.bus
+                                ? 
+                                !item.data.getOnBusFromHouse
+                                ? <Text style={{ fontSize: 12, alignItems: 'center'}}>Không đi xe trường</Text>
+                                : item.data.getOnBusFromHouse && !item.data.getOutBusFromHouse && new Date().getDate() == (new Date(item.data.date)).getDate()
+                                ? <Text style={{ fontSize: 12, alignItems: 'center', color: "green",  fontWeight: 'bold'}}>Đã lên xe</Text>
+                                : item.data.getOutBusFromHouse && new Date().getDate() == (new Date(item.data.date)).getDate()
+                                ? <Text style={{ fontSize: 12, alignItems: 'center', color: "green", fontWeight: 'bold'}}>Đã xuống xe</Text>
+                                : <Text style={{ fontSize: 12, alignItems: 'center'}}>Không đi xe trường</Text>
+                                : <Text style={{ fontSize: 12, alignItems: 'center'}}>Không đi xe trường</Text>
+                            }
+                        </View>
                     </View>
                 </View>
+                </TouchableOpacity>
             </View>
 
             <View style={styles.body_area_content_right}>
                 <View style={styles.body_area_content_right_child}>
                     <Text style={{ fontSize: 13, fontWeight: 'bold' }}>
                         {item.data.name}
+                        {/* <View  style={{ width: 10 }}/>
+                        <Text style={{ fontSize: 12, textAlign: 'right' }}>Đã điểm danh xuống xe</Text> */}
                     </Text>
                     {item.data.attendanceDay.attendanceStatus}
                     {
@@ -394,6 +454,12 @@ const TeacherHomePage = ({ navigation, route }) => {
                             data={studentList}
                             renderItem={renderItem}
                             keyExtractor={item => item.data._id}
+                            refreshControl={
+                                <RefreshControl
+                                  refreshing={refreshing}
+                                  onRefresh={onRefresh}
+                                />
+                            }
                         />
                         : <></>
                     }
@@ -505,7 +571,7 @@ const styles = StyleSheet.create({
 
 
     body_area_content_area: {
-        height: 100,
+        height: 130,
         // backgroundColor: 'red',
         marginBottom: 20,
         flexDirection: 'row',
@@ -519,11 +585,13 @@ const styles = StyleSheet.create({
 
     body_area_content_left_child: {
         backgroundColor: '#38f9d6',
+        // backgroundColor: '#9e9e9e',
         flex: 1,
-        justifyContent: 'center',
+        // justifyContent: 'center',
         alignItems: 'center',
         borderTopLeftRadius: 20,
         borderBottomLeftRadius: 20,
+        paddingVertical: 5
     },
 
     body_area_content_avt_box: {

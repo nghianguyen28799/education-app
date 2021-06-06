@@ -45,7 +45,8 @@ const screen = Dimensions.get("screen");
 
 const { width, height } = screen;
 
-const GOOGLE_MAPS_APIKEY = 'AIzaSyBHRMxpBKc25CMHY51h1jrnCCm6PjNs62s';
+const GOOGLE_MAPS_APIKEY = '';
+// const GOOGLE_MAPS_APIKEY = 'AIzaSyBLnQ6KLSCfkgMFDgbw1_jMzlo4fhXILss';
 
 const MapScreen = ({ navigation }) => {
     const user = useSelector(state => state.userReducer.data)
@@ -135,6 +136,7 @@ const MapScreen = ({ navigation }) => {
     const realtimeGps = () => {
         setTimer(setInterval(handleData, 5000))
         async function handleData() {
+            console.log('test');
             let location = await Location.getCurrentPositionAsync({});
             setLocation(location);
             setMapRegion({
@@ -243,7 +245,7 @@ const MapScreen = ({ navigation }) => {
                                 changeModalVisiblity(false)
                             )
                             setDesDatabase({
-                                id: 'truonghoc',
+                                _id: 'truonghoc',
                                 name: "Trường học",
                                 gps: {
                                     latitude: 10.033882853267741, 
@@ -309,7 +311,10 @@ const MapScreen = ({ navigation }) => {
             </View>  
                 
             <View style={styles.body}> 
-                <MapView initialRegion={mapRegion} style={styles.mapView}>
+                <MapView 
+                    initialRegion={mapRegion} 
+                    style={styles.mapView}
+                >
                     {
                         mapRegion
                         ?
@@ -319,7 +324,7 @@ const MapScreen = ({ navigation }) => {
                                 title="Xe Bus" description="Vị trí hiện tại">
                                 <Image source={BusLocation} style={{ width: 32, height: 32 }} />
                             </Marker>
-                            {
+                            {/* {
                                 <MapViewDirections
                                     origin={mapRegion}
                                     destination={Object.entries(desDatabase).length !== 0 ? desDatabase.gps : null}
@@ -328,7 +333,7 @@ const MapScreen = ({ navigation }) => {
                                     strokeColor="red"
                                     optimizeWaypoints={true}
                                 />
-                            }
+                            } */}
                         </>
                         
                         : null

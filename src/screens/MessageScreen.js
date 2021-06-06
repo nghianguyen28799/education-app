@@ -10,6 +10,7 @@ import {
     ScrollView,
     SafeAreaView,
     TextInput,
+    FlatList
 } from 'react-native'
 
 // icon store
@@ -43,7 +44,7 @@ const MessageScreen = ({ navigation, route }) => {
         const [studentData, setStudentData] = React.useState();
         const [teacherData, setTeacherData] = React.useState([]);
         const [parentsData, setParentsData] = React.useState();
-    
+        const [type, setType] = React.useState(0);
         React.useEffect(() => {
             getData();
         }, [])
@@ -51,15 +52,15 @@ const MessageScreen = ({ navigation, route }) => {
         const getData = async () => {
           try{
             socket = io.connect(host);
-          
+            setType(route.params.type);
             const isStudent = await axios.post(`${host}/student/getStudentByParentsId`, {id: user.data._id})
-            const isTeacher = await axios.post(`${host}/teacher/getUserById`, {id: isStudent.data.teacherCode})
+            const isTeacher = await axios.post(`${host}/teacher/getUserById`, {id: route.params.id})
             const isClass = await axios.post(`${host}/class/getClassById`, {id: isStudent.data.classCode})
             
             setTeacherData(isTeacher.data)  
   
             const name = user.data.FullName;
-            const room = isTeacher.data._id+'_'+user.data._id;
+            const room = route.params.id+'_'+user.data._id;
            
             axios.post(`${host}/chat/checkroom`, {room} )
 
@@ -69,9 +70,9 @@ const MessageScreen = ({ navigation, route }) => {
 
             setName(name);
             setRoom(room);
-  
+            
             socket.emit('join', { name, room });
-   
+            console.log('joined');
             return () => {
               socket.emit('disconnect');
               socket.off();
@@ -90,6 +91,12 @@ const MessageScreen = ({ navigation, route }) => {
           })
         }, []);
     
+        const leaveRoom = () => {
+          console.log('out');
+          socket.emit('leaveroom');
+          console.log('leaved');
+        }
+
         const onSend = React.useCallback((messages = {}) => {
             setMessages(previousMessages => GiftedChat.append(previousMessages, messages))
             socket.emit('sendMessage', messages);
@@ -137,11 +144,11 @@ const MessageScreen = ({ navigation, route }) => {
               return (
                 <View style={styles.titleHeader}>
                   <Text style={styles.titleHeader_text}>
-                      { teacherData.Gender === "Male" ? "(Thầy)" : "Cô" } {teacherData.FullName}
+                      { teacherData.Gender === "Male" ? "(Thầy)" : "(Cô)" } {teacherData.FullName}
                   </Text>
                   <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center'}}>
                       {/* <Text style={{ color: '#fff', fontSize: 13 }}>Phụ huynh của: </Text> */}
-                      <Text style={{ fontWeight: 'bold', color: 'yellow' }}>GVCN</Text>
+                      <Text style={{ fontWeight: 'bold', color: 'yellow' }}>{ type == 1 ? "GVCN" : type == 2 ? "GV Đưa Đón": ''}</Text>
                   </View>
               </View>
               )
@@ -152,7 +159,11 @@ const MessageScreen = ({ navigation, route }) => {
             <View style={styles.header}>
             <StatusBar backgroundColor="#00a6b5c9" barStyle="light-content" />
             <TouchableOpacity
-                onPress={() => navigation.goBack()}
+                onPress={
+                  () => {
+                    leaveRoom(),
+                    navigation.goBack()
+                  }}
             >
                 <View style={styles.goBackHeader}>
                     <FontAwesome5 name="angle-left" size={30} color="#fff"/>
@@ -215,11 +226,12 @@ const MessageScreen = ({ navigation, route }) => {
     
     
     
-    else if(user.data.permission === "teacher") {
+    else {
         // const [studentData, setStudentData] = React.useState();
         // const [teacherData, setTeacherData] = React.useState([]);
         // const [parentsData, setParentsData] = React.useState();
-        const { studentData, parentsData, teacherData } = route.params
+        const { studentData, parentsData } = route.params;
+        const [teacherImg, setTeacherImg] = React.useState("");
         
         // console.log(studentData);
 
@@ -238,6 +250,7 @@ const MessageScreen = ({ navigation, route }) => {
 
             const getMessages = await  axios.post(`${host}/chat/showMessages`, {room} )
             
+            setTeacherImg(user.data.Avatar);
             setMessages(getMessages.data[0].messages)
             
             setName(name);
@@ -357,7 +370,7 @@ const MessageScreen = ({ navigation, route }) => {
                     user={{
                         _id: user.data._id,
                         name: 'Parents',
-                        avatar: `${host}/${teacherData.Avatar}`
+                        avatar: teacherImg ? `${host}/${teacherImg}` : ''
                     }}
                     renderBubble={renderBubble}
                     alwaysShowSend

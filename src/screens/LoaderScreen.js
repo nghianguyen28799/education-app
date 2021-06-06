@@ -6,8 +6,8 @@ import axios from 'axios';
 import host from '../assets/host'
 import { useDispatch } from 'react-redux';
 import { addUser } from '../actions/userAction'
-import { addInfo } from '../actions/followAction'
-import { addStudent } from '../actions/attendanceListAction'
+import { addInfo, initialInfo } from '../actions/followAction'
+import { addStudent, initialStudent } from '../actions/attendanceListAction'
 import { addDestination } from '../actions/destinationAction'
 
 import LottieView from 'lottie-react-native';
@@ -16,15 +16,13 @@ import { useRef } from 'react';
 import { database } from '../assets/host/firebase'
 // import LoadingAnimation from '../assets/json/loader.json';
 
-
-
 export default function LoaderScreen({ navigation }) {
   
   const animataLotte = useRef(null);
 
   const dispatch = useDispatch();
 
-  const addStudentList = async (id) => {
+  const addStudentList = async (id) => { 
     const isSchedule = await axios.post(`${host}/supervisorschedule/showdestination`, { id: id})
     const initialSchedule = {
       date: new Date(),
@@ -50,31 +48,53 @@ export default function LoaderScreen({ navigation }) {
     }   
     
 
-    const isList = await axios.post(`${host}/registerbus/showAllList`)
-    const dateNow = new Date(isSchedule.data.date).getDate()+"/"+new Date(isSchedule.data.date).getMonth()
+    const isList = await axios.post(`${host}/registerbus/showAllList`, { id })
+    // const dateNow = new Date(isSchedule.data.date).getDate()+"/"+new Date(isSchedule.data.date).getMonth()
     
-    isList.data.map(value => {
-        value.listBookStation.map(value2 => {
-            const getDate = (new Date(value2.date)).getDate()+'/'+(new Date(value2.date)).getMonth()
-            if(getDate === dateNow) {
-                axios.post(`${host}/student/getStudentByParentsId`, {id: value.parentsId})
-                .then(res => {
-                  const studentInfo = {
-                    valueparentsId: value.parentsId,
-                    student: res.data,
-                    station: value2
-                  };
-                  dispatch(addInfo(studentInfo))
-                })
-            }    
-        })
+    isList.data.map(async (value) => {
+      const studentData = await axios.post(`${host}/student/getStudentByParentsId`, {id: value.parentsId})
+      const updatedData = await axios.post(`${host}/registerbus/updateDate`, {id: value.parentsId})
+      const studentInfo = {
+        valueparentsId: value.parentsId,
+        student: studentData.data,
+        station: {
+          station: value.station,
+          getOnBusFromHouse: updatedData.data.getOnBusFromHouse,
+          getOutBusFromHouse: updatedData.data.getOutBusFromHouse,
+          getOnBusFromSchool: updatedData.data.getOnBusFromSchool,
+          getOutBusFromSchool: updatedData.data.getOutBusFromSchool,
+          // supervisorId: updatedData.data.supervisorId,
+        }
+      };  
+      dispatch(addInfo(studentInfo))
     })
   }
 
   const addStudentToAttendannce = async (classCode) => {
     const isStudentList = await axios.post(`${host}/student/getStudentByClassCode`, { classCode })
-    isStudentList.data.map(item => {
-      dispatch(addStudent(item))
+    isStudentList.data.map(async(item) => {
+      const isParents = await axios.post(`${host}/users/getUserById`, { id: item.parentsCode })
+      const parentsId = isParents.data[0]._id;
+      const isRegister = await axios.post(`${host}/registerbus/show`, { id: parentsId })
+      if(Object.entries(isRegister.data).length > 0) {
+        const info = {
+          ...item,
+          bus: true,
+          date: isRegister.data.date,
+          getOnBusFromHouse: isRegister.data.getOnBusFromHouse,
+          getOutBusFromHouse: isRegister.data.getOutBusFromHouse,
+          getOnBusFromSchool: isRegister.data.getOnBusFromSchool,
+          getOutBusFromSchool: isRegister.data.getOutBusFromSchool,
+        } 
+        // console.log(info);
+        dispatch(addStudent(info))    
+      } else {
+        const info = {
+          ...item,
+          bus: false,
+        } 
+        dispatch(addStudent(info))    
+      }
     })
   }
 
@@ -97,6 +117,7 @@ export default function LoaderScreen({ navigation }) {
           navigation.replace('TeacherHome');
         }
         else if(valuePermission === 'supervisor' ) {
+          dispatch(initialInfo())
           const user = await axios.post(`${host}/teacher/getUserFromToken`, {token: valueToken, permission: 'supervisor'})
           addStudentList(user.data._id)
           dispatch(addUser(user.data))

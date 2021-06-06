@@ -33,7 +33,7 @@ const screen = Dimensions.get("screen");
 const { width, height } = screen;
 
 
-const ProfileTeacherScreen = ({ navigation }) => {
+const ProfileTeacherScreen = ({ navigation, route }) => {
 
     const user = useSelector(state => state.userReducer)
 
@@ -50,12 +50,13 @@ const ProfileTeacherScreen = ({ navigation }) => {
 
     const getData = async () => {
         try{
-            const isStudent = await axios.post(`${host}/student/getStudentByParentsId`, {id: user.data._id})
-            const isTeacher = await axios.post(`${host}/teacher/getUserById`, {id: isStudent.data.teacherCode})
-            const isClass = await axios.post(`${host}/class/getClassById`, {id: isStudent.data.classCode})
-            setStudentData(isStudent.data) 
+            const { id } = route.params;
+            // const isStudent = await axios.post(`${host}/student/getStudentByParentsId`, {id: user.data._id})
+            const isTeacher = await axios.post(`${host}/teacher/getUserById`, {id: id})
+            // const isClass = await axios.post(`${host}/class/getClassById`, {id: isStudent.data.classCode })
+            // setStudentData(isStudent.data) 
             setTeacherData(isTeacher.data)  
-            setClassData(isClass.data[0])
+            // setClassData(isClass.data[0])
 
         } catch(error) {
             console.log(error);
@@ -101,7 +102,7 @@ const ProfileTeacherScreen = ({ navigation }) => {
                 </TouchableOpacity>
                 
                 <View style={styles.titleHeader}>
-                    <Text style={styles.titleHeader_text}>Hồ sơ GVCN</Text>
+                    <Text style={styles.titleHeader_text}>Hồ sơ giáo viên đưa đón</Text>
                 </View>
                 
                 {/* <TouchableOpacity
@@ -230,22 +231,10 @@ const ProfileTeacherScreen = ({ navigation }) => {
                     <View style={styles.contentProfile_textfield}>
                         <Text style={styles.contentProfile_textfield_title}>Quyền </Text>
                         <Text style={styles.contentProfile_textfield_content}> 
-                            Giáo viên
+                            Giáo viên đưa đón
                         </Text>
                     </View> 
 
-                    {/* Lớp */}
-
-                    <View style={styles.contentProfile_textfield}>
-                        <Text style={styles.contentProfile_textfield_title}>Chủ nhiệm lớp </Text>
-                        <Text style={styles.contentProfile_textfield_content}> {`Lớp `}
-                            {
-                                classData.ClassCode
-                                ? classData.ClassCode
-                                : null
-                            }
-                        </Text>
-                    </View>   
                 </View>
             </View>
         </View>  
@@ -308,7 +297,7 @@ const styles = StyleSheet.create({
     RealtimeChatHeader: {
         flexDirection: 'row',
         padding: 10,
-        opacity: 0
+        opacity: 0,
     },
 
     RealtimeChatHeader_text: {

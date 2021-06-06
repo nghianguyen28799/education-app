@@ -118,6 +118,12 @@ function CustomDrawer({navigation, progress, ...props}) {
                                 icon={({icon, size}) => <FontAwesome5 name="lock" color="#057aae" size={18} />}
                                 onPress={() => navigation.navigate("ChangePassword")}
                             />
+
+                            <DrawerItem 
+                                label="Tin nhắn" 
+                                icon={({icon, size}) => <MaterialIcons name="message" size={20} color="#057aae" /> }
+                                onPress={() => navigation.navigate('MessageList')}
+                            />
     
                         </Animated.View>
                     </DrawerContentScrollView>

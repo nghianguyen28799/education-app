@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "568294892756",
+    "firebase_url": "https://edu-app-554bc-default-rtdb.firebaseio.com",
+    "project_id": "edu-app-554bc",
+    "storage_bucket": "edu-app-554bc.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:568294892756:android:43e49ed15694083f82c741",
+        "android_client_info": {
+          "package_name": "com.nghianguyen28799.EduProject"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "568294892756-gcu7h82nsqna24s7ff1qisfmk7bvhac2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBEaPwk5WIYlyXxPWkufmA9daq1GrwHMwQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "568294892756-gcu7h82nsqna24s7ff1qisfmk7bvhac2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

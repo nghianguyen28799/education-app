@@ -56,7 +56,7 @@ const ProfileParentsScreen = ({ navigation }) => {
     const [classData, setClassData] = React.useState({});
     const [edit, setEdit] = React.useState(false);
     const [loading, setLoading] = React.useState(false);
-    const [imageStudent, setImageStudent] = React.useState(null);
+    // const [imageStudent, setImageStudent] = React.useState(null);
     const [imageParents, setImageParents] = React.useState(null);
     const [isModalViewRating, setModalViewRating] = React.useState(false);
     const [ratingData, setRatingData] = React.useState([]);
@@ -75,7 +75,7 @@ const ProfileParentsScreen = ({ navigation }) => {
             setClassData(isClass.data[0])
             setParentsData(user.data)
             
-            isStudent.data.avatar && setImageStudent(isStudent.data.avatar)
+            // isStudent.data.avatar && setImageStudent(isStudent.data.avatar)
             setImageParents(user.data.Avatar)
 
             // console.log(isStudent.data);
@@ -165,8 +165,33 @@ const ProfileParentsScreen = ({ navigation }) => {
     const bs2 = React.createRef()
     const fall2 = new Animated.Value(1);
 
-    const takePhotoFromCamera = () => {
-        console.log('take photo');
+    const defaultImageParents = async () => {
+        const handler = await axios.post(`${host}/users/defaultPicture`, { id: user.data._id });
+
+        if(handler.data.success) {
+            setLoading(true)
+            const timer = setInterval(async () => {
+                await dispatch(addUser({
+                    ...user.data,
+                    Avatar: '',
+                }))
+                navigation.replace('Profile');
+                clearInterval(timer)
+            },2000)
+        }
+    }
+
+    const defaultImageStudent = async () => {
+        const handler = await axios.post(`${host}/student/defaultPicture`, { id: studentData._id });
+
+        if(handler.data.success) {
+            setLoading(true)
+            const timer = setInterval(async () => {
+                navigation.replace('Profile');
+                clearInterval(timer)
+            },2000)
+        }
+
     }
 
     const uploadParentsImage = async (file) => {
@@ -233,9 +258,9 @@ const ProfileParentsScreen = ({ navigation }) => {
             allowsEditing: true,
             aspect: [4, 4],
             quality: 1,
-          });
+        });
       
-          if (!result.cancelled) {
+        if (!result.cancelled) {
             setParentsData({
                 ...parentsData,
                 Avatar: result.uri
@@ -264,12 +289,12 @@ const ProfileParentsScreen = ({ navigation }) => {
                 <Text style={styles.panelSubtitle}>Chọn hình ảnh hồ sơ của bạn</Text>
             </View>
 
-            <TouchableOpacity style={styles.panelButton} onPress={takePhotoFromCamera}>
-                <Text style={styles.panelButtonTitle}>Take Photo</Text>
+            <TouchableOpacity style={styles.panelButton} onPress={defaultImageParents}>
+                <Text style={styles.panelButtonTitle}>Khôi phục ảnh mặc định.</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.panelButton} onPress={choosePhotoFromLibraryForParents}>
-                <Text style={styles.panelButtonTitle}>Choose From Library</Text>
+                <Text style={styles.panelButtonTitle}>Chọn ảnh từ thư viện.</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -287,12 +312,12 @@ const ProfileParentsScreen = ({ navigation }) => {
                 <Text style={styles.panelSubtitle}>Chọn hình ảnh cho học sinh</Text>
             </View>
 
-            <TouchableOpacity style={styles.panelButton} onPress={takePhotoFromCamera}>
-                <Text style={styles.panelButtonTitle}>Take Photo</Text>
+            <TouchableOpacity style={styles.panelButton} onPress={defaultImageStudent}>
+                <Text style={styles.panelButtonTitle}>Khôi phục ảnh mặc định.</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.panelButton} onPress={choosePhotoFromLibraryForStudent}>
-                <Text style={styles.panelButtonTitle}>Choose From Library</Text>
+                <Text style={styles.panelButtonTitle}>Chọn ảnh từ thư viện</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -455,17 +480,34 @@ const ProfileParentsScreen = ({ navigation }) => {
                 <View style={styles.body}>
                     <View style={styles.contentProfile}>
                         <View style={styles.contentProfile_avatar}>
-                            <TouchableOpacity onPress={() => bs2.current.snapTo(0)}>
-                                {
-                                    imageParents
-                                    ? <Image source={{ uri: `${host}/${imageStudent}` }} style={{ width: 120, height: 120, borderRadius: 70, borderWidth: 2, borderColor: '#9EBBD0' }}/> 
-                                    : studentData.gender === "Male"
-                                    ?  <Image source={MaleNoneAvatar} style={{ width: 120, height: 120 }}/> 
-                                    : studentData.gender === "Female"
-                                    ?  <Image source={FemaleNoneAvatar} style={{ width: 120, height: 120 }}/> 
-                                    : null
-                                }
-                            </TouchableOpacity>
+                            {
+                                edit
+                                ?
+                                    <TouchableOpacity onPress={() => bs2.current.snapTo(0)}>
+                                        {
+                                            studentData.avatar
+                                            ? <Image source={{ uri: `${host}/${studentData.avatar}` }} style={{ width: 120, height: 120, borderRadius: 70, borderWidth: 2, borderColor: '#9EBBD0' }}/> 
+                                            : studentData.gender === "Male"
+                                            ?  <Image source={MaleNoneAvatar} style={{ width: 120, height: 120 }}/> 
+                                            : studentData.gender === "Female"
+                                            ?  <Image source={FemaleNoneAvatar} style={{ width: 120, height: 120 }}/> 
+                                            : null
+                                        }
+                                    </TouchableOpacity>
+                                : 
+                                    <View>
+                                        {
+                                            studentData.avatar
+                                            ? <Image source={{ uri: `${host}/${studentData.avatar}` }} style={{ width: 120, height: 120, borderRadius: 70, borderWidth: 2, borderColor: '#9EBBD0' }}/> 
+                                            : studentData.gender === "Male"
+                                            ?  <Image source={MaleNoneAvatar} style={{ width: 120, height: 120 }}/> 
+                                            : studentData.gender === "Female"
+                                            ?  <Image source={FemaleNoneAvatar} style={{ width: 120, height: 120 }}/> 
+                                            : null
+                                        }
+                                    </View>
+                            }
+                            
                         </View>
                         
                         {/* Họ tên */}

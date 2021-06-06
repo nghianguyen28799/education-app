@@ -222,7 +222,7 @@ export default function ScanScreen({ navigation, route }) {
                             justifyContent: 'center'
                           }}
                         >
-                        <FontAwesome5 name="check" size={20} color="#EE3121" style={{ marginRight: 5 }}/>
+                        <Entypo name="cross" size={24} color="#EE3121" style={{ marginRight: 5 }}/>
                         <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16}}>Hủy bỏ</Text>
                         </LinearGradient>
                     </TouchableOpacity>

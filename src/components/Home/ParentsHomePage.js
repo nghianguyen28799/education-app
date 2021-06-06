@@ -25,16 +25,31 @@ import { FontAwesome } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
 
 // close icon store
+import axios from 'axios';
+import host from '../../assets/host';
 import backgroundHeader from '../../assets/images/background-parents-home.png';
 import KidWelcome from '../../assets/images/kid-welcome.jpg';
-import { database } from '../../assets/host/firebase'
+// import { database } from '../../assets/host/firebase'
+import { useDispatch, useSelector } from 'react-redux';
+
 const window = Dimensions.get("window");
 const screen = Dimensions.get("screen");
 
 const { width, height } = screen;
 
 const TeacherHomePage = ({navigation}) => {
-    
+    const user = useSelector(state => state.userReducer)
+    const [teacherData, setTeacherData] = React.useState({});
+    React.useEffect(() => {
+        getData();
+    },[])
+
+    const getData = async () => {
+        const isStudent = await axios.post(`${host}/student/getStudentByParentsId`, {id: user.data._id})
+        const isTeacher = await axios.post(`${host}/teacher/getUserById`, {id: isStudent.data.teacherCode})
+        // console.log(isTeacher.data);
+        setTeacherData(isTeacher.data);
+    }
     return (
         <View style={styles.container}>
             <StatusBar backgroundColor="#fff" barStyle="dark-content" />
@@ -97,7 +112,10 @@ const TeacherHomePage = ({navigation}) => {
                         </TouchableOpacity>
                         <TouchableOpacity 
                             style={styles.each_category_space}
-                            onPress={() => navigation.navigate("Message")}
+                            onPress={() => navigation.navigate("Message", {
+                                id: teacherData._id,
+                                type: 1,
+                            })}
                         >
                             <View style={styles.each_category}>
                                 <View style={styles.icon_category_border}>
@@ -186,13 +204,13 @@ const TeacherHomePage = ({navigation}) => {
                         >
                             <View style={styles.each_category}>
                                 <View style={styles.icon_category_border}>
-                                    <View style={[styles.icon_category, {backgroundColor: "#75f182"}]}>
+                                    <View style={[styles.icon_category, {backgroundColor: "#27AE60"}]}>
                                         <FontAwesome5 name="map-marked-alt" size={26} color="#fff" />
                                     </View>
                                 </View>
                                 <View style={styles.name_category_border}>
                                     <View style={styles.name_category}>
-                                        <Text style={{ fontSize: 13, textAlign: 'center', color: "#75f182" }}>
+                                        <Text style={{ fontSize: 13, textAlign: 'center', color: "#27AE60" }}>
                                             Theo dõi GPS
                                         </Text>
                                     </View>

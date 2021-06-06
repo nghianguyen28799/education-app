@@ -355,40 +355,40 @@ const ViewProfileStudentScreen = ({ navigation, route }) => {
                     
                     <View style={{ flex: 1, borderWidth: 1, borderColor: '#D5DBDB', marginVertical: 15}}></View> 
 
+                    <View style={{ flex: 1, height: 50, marginBottom: 15 }}>
+                        <TouchableOpacity 
+                            onPress={() => navigation.navigate('Message', {
+                                studentData: studentData,
+                                parentsData: parentsData,
+                                teacherData: teacherData
+                            })}
+                            style={{ flexDirection: 'row', flex: 1 }}
+                        >
+                            <LinearGradient
+                                start={{ x: 0, y: 1 }}
+                                end={{ x: 0.5, y: 3 }}
+                                colors={['#5499C7', '#5DADE2','#40E0D0']}
+                                style={{ 
+                                    flexDirection: 'row', 
+                                    flex: 1, 
+                                    paddingHorizontal: 20, 
+                                    borderRadius: 40 ,
+                                    alignItems: 'center'
+                                }}
+                            >
+                                <AntDesign name="message1" size={22} color="#D5DBDB" />
+                                <Text style={{ flex: 1, textAlign: 'center', fontWeight: 'bold', color: '#fff' }}>Tin nhắn</Text>
+                                <AntDesign name="message1" size={22} color="#6495ED"  style={{ opacity: 0 }} />
+                            </LinearGradient>
+                        </TouchableOpacity>
+                    </View>
+
                     {
                         user 
                         ?
                             user.permission == 'teacher'
                             ?
                             <>
-                                <View style={{ flex: 1, height: 50, marginBottom: 15 }}>
-                                    <TouchableOpacity 
-                                        onPress={() => navigation.navigate('Message', {
-                                            studentData: studentData,
-                                            parentsData: parentsData,
-                                            teacherData: teacherData
-                                        })}
-                                        style={{ flexDirection: 'row', flex: 1 }}
-                                    >
-                                        <LinearGradient
-                                            start={{ x: 0, y: 1 }}
-                                            end={{ x: 0.5, y: 3 }}
-                                            colors={['#5499C7', '#5DADE2','#40E0D0']}
-                                            style={{ 
-                                                flexDirection: 'row', 
-                                                flex: 1, 
-                                                paddingHorizontal: 20, 
-                                                borderRadius: 40 ,
-                                                alignItems: 'center'
-                                            }}
-                                        >
-                                            <AntDesign name="message1" size={22} color="#D5DBDB" />
-                                            <Text style={{ flex: 1, textAlign: 'center', fontWeight: 'bold', color: '#fff' }}>Tin nhắn</Text>
-                                            <AntDesign name="message1" size={22} color="#6495ED"  style={{ opacity: 0 }} />
-                                        </LinearGradient>
-                                    </TouchableOpacity>
-                                </View>
-
                                 <View style={{ flex: 1, height: 50, marginBottom: 15 }}>
                                     <TouchableOpacity 
                                         onPress={() => changeModalVisiblity(true)}

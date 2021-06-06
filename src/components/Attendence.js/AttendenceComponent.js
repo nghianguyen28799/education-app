@@ -53,10 +53,12 @@ const AttendenceComponent = ({ navigation }) => {
     const [studentListAtStation, setStudentListAtStation] = React.useState([]);
     const [studentListAtStationFilter, setStudentListAtStationFilter] = React.useState([]);
     const [qtyAttendanced, setQtyAttendanced] = React.useState(0);
-
+    const [bsx, setBsx] = React.useState('');
     const getData = async () => {
         const isStation = await axios.get(`${host}/station/show`)
         setStationData(isStation.data);
+        const bsxData = await axios.post(`${host}/bus/getDataById`, {id: user.data._id})
+        setBsx(bsxData.data.licensePlate);
     }
 
     React.useEffect(() => {
@@ -158,23 +160,24 @@ const AttendenceComponent = ({ navigation }) => {
         dispatch(initialInfo());
         const isSchedule = await axios.post(`${host}/supervisorschedule/start`, { id: user.data._id, status: "OnBus" })
         dispatch(addDestination(isSchedule.data))
-        const isList = await axios.post(`${host}/registerbus/showAllList`)
-        const dateNow = new Date(isSchedule.data.date).getDate()+"/"+new Date(isSchedule.data.date).getMonth()
-        isList.data.map(value => {
-            value.listBookStation.map(value2 => {
-                const getDate = (new Date(value2.date)).getDate()+'/'+(new Date(value2.date)).getMonth()
-                if(getDate === dateNow) {
-                    axios.post(`${host}/student/getStudentByParentsId`, {id: value.parentsId})
-                    .then(res => {
-                        const studentInfo = {
-                        valueparentsId: value.parentsId,
-                        student: res.data,
-                        station: value2
-                        };
-                        dispatch(addInfo(studentInfo))
-                    })  
-                }    
-            })
+        const isList = await axios.post(`${host}/registerbus/showAllList`, { id: user.data._id })
+
+        isList.data.map(async (value) => {
+            const studentData = await axios.post(`${host}/student/getStudentByParentsId`, {id: value.parentsId})
+          //   const updatedData = await axios.post(`${host}/registerbus/updateDate`, {id: value.parentsId})
+            const studentInfo = {
+              valueparentsId: value.parentsId,
+              student: studentData.data,
+              station: {
+                station: value.station,
+                getOnBusFromHouse: value.getOnBusFromHouse,
+                getOutBusFromHouse: value.getOutBusFromHouse,
+                getOnBusFromSchool: value.getOnBusFromSchool,
+                getOutBusFromSchool: value.getOutBusFromSchool,
+              //   supervisorId: updatedData.data.supervisorId,
+              }
+            };  
+            dispatch(addInfo(studentInfo));
         })
 
         if(isSchedule.data.process.destination === 1) {
@@ -201,55 +204,59 @@ const AttendenceComponent = ({ navigation }) => {
         dispatch(initialInfo());
         const isSchedule = await axios.post(`${host}/supervisorschedule/end`, { id: user.data._id, status: "OnBus" })
         dispatch(addDestination(isSchedule.data))
-        const isList = await axios.post(`${host}/registerbus/showAllList`)
-        const dateNow = new Date(isSchedule.data.date).getDate()+"/"+new Date(isSchedule.data.date).getMonth()
-        isList.data.map(value => {
-            value.listBookStation.map(value2 => {
-                const getDate = (new Date(value2.date)).getDate()+'/'+(new Date(value2.date)).getMonth()
-                if(getDate === dateNow) {
-                    axios.post(`${host}/student/getStudentByParentsId`, {id: value.parentsId})
-                    .then(res => {
-                        const studentInfo = {
-                            valueparentsId: value.parentsId,
-                            student: res.data,
-                            station: value2
-                        };
-                        if(scheduleInfo.process.destination === 1 && !value2.getOnBusFromHouse) {
-                            studentName = res.data.name;
-                            axios.post(`${host}/notification/create`, { 
-                                parentsId: value.parentsId,
-                                title: 'Vắng lên xe',
-                                content: `${studentName} vắng điểm danh lên xe từ Nhà đến Trường`,
-                            })
-                            axios.post(`${host}/notification/pushNotification`, { 
-                                parentsId: value.parentsId,
-                            })
-                            .then(res => {
-                                res.data.map(item => {
-                                    sendPushNotification(item.tokenDevices, studentName, 1)
-                                });
-                            })
-                        } else if(scheduleInfo.process.destination === 2 && !value2.getOnBusFromSchool) {
-                            studentName = res.data.name;
-                            axios.post(`${host}/notification/create`, { 
-                                parentsId: value.parentsId,
-                                title: 'Vắng lên xe',
-                                content: `${studentName} vắng điểm danh lên xe từ Trường về Nhà`,
-                            })
-                            axios.post(`${host}/notification/pushNotification`, { 
-                                parentsId: value.parentsId,
-                            })
-                            .then(res => {
-                                res.data.map(item => {
-                                    sendPushNotification(item.tokenDevices, studentName, 2)
-                                });
-                            })
-                        }
-                      dispatch(addInfo(studentInfo))
-                    })
-                }    
-            })
+        
+        const isList = await axios.post(`${host}/registerbus/showAllList`, { id: user.data._id })
+
+        isList.data.map(async (value) => {
+            const studentData = await axios.post(`${host}/student/getStudentByParentsId`, {id: value.parentsId})
+          //   const updatedData = await axios.post(`${host}/registerbus/updateDate`, {id: value.parentsId})
+            
+            if(scheduleInfo.process.destination === 1 && !value.getOnBusFromHouse) {
+                const studentName = studentData.data.name;
+                axios.post(`${host}/notification/create`, { 
+                    parentsId: value.parentsId,
+                    title: 'Vắng lên xe',
+                    content: `${studentName} vắng điểm danh lên xe từ Nhà đến Trường`,
+                })
+                axios.post(`${host}/notification/pushNotification`, { 
+                    parentsId: value.parentsId,
+                })
+                .then(res => {
+                    res.data.map(item => {
+                        sendPushNotification(item.tokenDevices, studentName, 1)
+                    });
+                })
+            } else if(scheduleInfo.process.destination === 2 && !value.getOnBusFromSchool) {
+                const studentName = studentData.data.name;
+                axios.post(`${host}/notification/create`, { 
+                    parentsId: value.parentsId,
+                    title: 'Vắng lên xe',
+                    content: `${studentName} vắng điểm danh lên xe từ Trường về Nhà`,
+                })
+                axios.post(`${host}/notification/pushNotification`, { 
+                    parentsId: value.parentsId,
+                })
+                .then(res => {
+                    res.data.map(item => {
+                        sendPushNotification(item.tokenDevices, studentName, 2)
+                    });
+                })
+            }
+            const studentInfo = {
+                valueparentsId: value.parentsId,
+                student: studentData.data,
+                station: {
+                  station: value.station,
+                  getOnBusFromHouse: value.getOnBusFromHouse,
+                  getOutBusFromHouse: value.getOutBusFromHouse,
+                  getOnBusFromSchool: value.getOnBusFromSchool,
+                  getOutBusFromSchool: value.getOutBusFromSchool,
+                //   supervisorId: updatedData.data.supervisorId,
+                }
+            };  
+            dispatch(addInfo(studentInfo));
         })
+
         if(isSchedule.data.process.destination === 1) {
             Alert.alert(
                 "Thành công!",
@@ -554,7 +561,7 @@ const AttendenceComponent = ({ navigation }) => {
                                             }
                                         </Text>
                                     </View>
-                                    <Text style={{ fontSize: 13, color: '#2E86C1' }}>Biển số xe: 65A - 56789</Text>
+                                    <Text style={{ fontSize: 13, color: '#2E86C1' }}>Biển số xe: {bsx}</Text>
                                 </View>
                                 <View style={{ flex: 1/2, flexDirection: 'row', justifyContent: 'flex-end' }}>
                                     {

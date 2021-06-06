@@ -141,8 +141,25 @@ const ProfileTeacherScreen = ({ navigation }) => {
     const fall = new Animated.Value(1);
 
 
-    const takePhotoFromCamera = () => {
+    const defaultImage = async () => {
+        const handler = await axios.post(`${host}/teacher/defaultPicture`, { id: user.data._id });
 
+        if(handler.data.success) {
+            setLoading(true)
+            const timer = setInterval(async () => {
+                setUserAvatarData({
+                    ...userAvatarData,
+                    Avatar: ''
+                })
+   
+                await dispatch(addUser({
+                    ...userAvatarData,
+                    Avatar: ''
+                }))
+                navigation.replace('Profile');
+                clearInterval(timer)
+            },2000)
+        }
     }
 
     const uploadImage = async (file) => {
@@ -164,10 +181,10 @@ const ProfileTeacherScreen = ({ navigation }) => {
         if(!error) {
             setLoading(true)
             const timer = setInterval(async () => {
-                // setUserAvatarData({
-                //     ...userAvatarData,
-                //     Avatar: data.uri
-                // })
+                setUserAvatarData({
+                    ...userAvatarData,
+                    Avatar: data.uri
+                })
    
                 await dispatch(addUser({
                     ...userAvatarData,
@@ -187,9 +204,9 @@ const ProfileTeacherScreen = ({ navigation }) => {
             allowsEditing: true,
             aspect: [4, 4],
             quality: 1,
-          });
+        });
       
-          if (!result.cancelled) {
+        if (!result.cancelled) {
             setImage(result.uri);
             uploadImage(result.uri)
         }
@@ -202,12 +219,12 @@ const ProfileTeacherScreen = ({ navigation }) => {
                 <Text style={styles.panelSubtitle}>Chọn hình ảnh hồ sơ của bạn</Text>
             </View>
 
-            <TouchableOpacity style={styles.panelButton} onPress={takePhotoFromCamera}>
-                <Text style={styles.panelButtonTitle}>Take Photo</Text>
+            <TouchableOpacity style={styles.panelButton} onPress={defaultImage}>
+                <Text style={styles.panelButtonTitle}>Khôi phục ảnh mặc định.</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.panelButton} onPress={choosePhotoFromLibrary}>
-                <Text style={styles.panelButtonTitle}>Choose From Library</Text>
+                <Text style={styles.panelButtonTitle}>Chọn ảnh từ thư viện.</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -299,7 +316,7 @@ const ProfileTeacherScreen = ({ navigation }) => {
                                 {
                                     image
                                     ? <Image source={{ uri: `${host}/${image}` }} style={{ width: 120, height: 120, borderRadius: 70 }}/> 
-                                    : <Image source={UserCirle} style={{ width: 80, height: 80 }}/> 
+                                    : <Image source={UserCirle} style={{ width: 100, height: 100 }}/> 
                                 }
                             </View>
                         </TouchableOpacity>
@@ -466,7 +483,7 @@ const ProfileTeacherScreen = ({ navigation }) => {
                             {
                                 image
                                 ? <Image source={{ uri: `${host}/${image}` }} style={{ width: 120, height: 120, borderRadius: 70 }}/> 
-                                : <Image source={UserCirle} style={{ width: 80, height: 80 }}/> 
+                                : <Image source={UserCirle} style={{ width: 100, height: 100 }}/> 
                             }
 
                         </View>

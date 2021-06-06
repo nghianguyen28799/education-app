@@ -24,8 +24,16 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
       },
-      "package": "com.nghianguyen28799.EduProject"
+     
+      "config":{
+        "googleMaps": { "apiKey": "AIzaSyBHRMxpBKc25CMHY51h1jrnCCm6PjNs62s" }
+      },
+      
+      "package": "com.nghianguyen28799.EduProject",
+      "googleServicesFile": "./google-services.json",
+      "useNextNotificationsApi": true
     },
+    
     "web": {
       "favicon": "./assets/favicon.png"
     }

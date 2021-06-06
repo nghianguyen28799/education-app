@@ -10,10 +10,12 @@ import {
     SafeAreaView,
     FlatList,
     Modal,
-    Dimensions
+    Dimensions,
+    RefreshControl
 } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient';
 import RNPickerSelect from 'react-native-picker-select';
+import * as Notifications from 'expo-notifications';
 
 import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
@@ -32,12 +34,24 @@ const screen = Dimensions.get("screen");
 
 const { width, height } = screen;
 
+const wait = (timeout) => {
+    return new Promise(resolve => setTimeout(resolve, timeout));
+  }
 
 const NotificationParentsScreen = ({navigation}) => {
     const [data, setData] = React.useState([]);
     const user = useSelector(state => state.userReducer)
     const [isModalVisible, setModalVisible] = React.useState(false);
     const [picture, setPicture] = React.useState("");
+    const [refreshing, setRefreshing] = React.useState(false);
+
+    const onRefresh = React.useCallback(() => {
+        setRefreshing(true);
+        wait(1000).then(() => {
+            setRefreshing(false);
+            fetchData();
+        })
+    }, []);
 
     const fetchData = async () => {
         const getNotifi = await axios.post(`${host}/notification/show`, { parentsId: user.data._id })
@@ -47,6 +61,51 @@ const NotificationParentsScreen = ({navigation}) => {
     React.useEffect(() => {
         fetchData()
     },[])
+
+    const confirmButton = async (item, text) => {
+        await axios.post(`${host}/notification/editConfirm`, {id: item._id, text: text });
+        const registerData = await axios.post(`${host}/registerBus/show`, {id: user.data._id });
+        const supervisorId = registerData.data.supervisorIdTemp;
+        const teacherData = await axios.post(`${host}/teacher/getUserById`, {id: supervisorId });
+        const studentData = await axios.post(`${host}/student/getStudentByParentsId`, {id: user.data._id});
+        const room = supervisorId+"_"+user.data._id;
+        await axios.post(`${host}/chat/checkRoom`, { room });
+        const message = {
+            text: `Phản hồi: ${text} người đón hộ `,
+            user: {
+                _id: user.data._id,
+                name: 'Parent',
+                avatar: user.data.avatar,
+            },
+            _id: Math.random().toString(36),
+            createdAt: new Date(),
+        }
+        await axios.post(`${host}/chat/addMessage`, { room, message });
+        teacherData.data.tokens.map(item => {
+            sendPushNotification(item.tokenDevices, studentData.data.name, text)
+        })
+        fetchData();
+    }
+
+    async function sendPushNotification(expoPushToken, name, text) {
+        const body = text == "Đã xác nhận đúng" ? `Đã xác nhận đúng người.` : `thông báo sai người.` 
+        const message = {
+          to: expoPushToken,
+          sound: 'default',
+          title: 'Phản hồi đón hộ',
+          body: `Phụ huynh ${name} ${body}`,
+          data: { someData: 'goes here' },
+        };  
+        await fetch('https://exp.host/--/api/v2/push/send', {
+            method: 'POST',
+            headers: {
+            Accept: 'application/json',
+            'Accept-encoding': 'gzip, deflate',
+            'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(message),
+        });
+    }
 
     const ViewModal = () => {
         return (
@@ -93,15 +152,48 @@ const NotificationParentsScreen = ({navigation}) => {
                     {item.title}
                 </Text>
                 <Text style={styles.notification_body}>{item.content}</Text>
-                <Text style={styles.notification_date}>
+                <View style={{ flexDirection: 'row' }}>
+                    <Text style={styles.notification_date}>
+                        {
+                            (new Date(item.date)).getHours() + ':' +
+                            (new Date(item.date)).getMinutes() + ' ' +
+                            (new Date(item.date)).getDate() + '-' +
+                            Number((new Date(item.date)).getMonth()+1) + '-' +
+                            (new Date(item.date)).getFullYear()
+                        }
+                    </Text>
+                    
                     {
-                        (new Date(item.date)).getHours() + ':' +
-                        (new Date(item.date)).getMinutes() + ' ' +
-                        (new Date(item.date)).getDate() + '-' +
-                        Number((new Date(item.date)).getMonth()+1) + '-' +
-                        (new Date(item.date)).getFullYear()
+                         item.picture && item.status == false
+                         ?
+                            <>
+                                <TouchableOpacity
+                                    onPress={() => confirmButton(item, "Đã xác nhận đúng")}
+                                >
+                                    <View style={{ padding: 3, marginHorizontal: 5, backgroundColor: "green" }}>
+                                        <Text style={{ fontSize: 12, fontWeight: 'bold', color: "#fff" }}>Xác nhận</Text>
+                                    </View>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => confirmButton(item, "Không đúng người")}
+                                >
+                                    <View style={{ padding: 3, backgroundColor: "#B03A2E" }}>
+                                        <Text style={{ fontSize: 12, fontWeight: 'bold', color: "#fff" }}>Không đúng</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            </>
+                        :
+                        <></> 
                     }
-                </Text>
+                    {
+                        item.other
+                        ?
+                        item.other == "Đã xác nhận đúng"
+                        ? <Text style={{ marginLeft: 5, fontSize: 12, fontWeight: 'bold', color: "green" }}>Đã xác nhận đúng</Text>
+                        : <Text style={{ marginLeft: 5, fontSize: 12, fontWeight: 'bold', color: "#B03A2E" }}>Không đúng người</Text>
+                        : <></>
+                    }
+                </View>
             </View>
             {
                 item.picture
@@ -133,10 +225,8 @@ const NotificationParentsScreen = ({navigation}) => {
                         <Entypo name="chevron-right" size={28} color="#2980B9" />
                     </View>
                 </TouchableOpacity>
-
                 : <></>
             }
-            
         </View>
     )
     return (
@@ -166,6 +256,12 @@ const NotificationParentsScreen = ({navigation}) => {
                         data={data}
                         renderItem={renderItem}
                         keyExtractor={item => item._id}
+                        refreshControl={
+                            <RefreshControl
+                              refreshing={refreshing}
+                              onRefresh={onRefresh}
+                            />
+                        }
                     /> : <></>
                 }
             </View>  
@@ -222,18 +318,18 @@ const styles = StyleSheet.create({
 
     each_notification_area: {
         // borderWidth: 1,
-        height: 100,
-        borderRadius: 20,
-        marginVertical: 10,
+        height: 115,
+        borderRadius: 12,
+        marginVertical: 5,
         flexDirection: 'row',
         backgroundColor: '#E5E7E9'
     },
 
     each_notification_area2: {
         // borderWidth: 1,
-        height: 100,
-        borderRadius: 20,
-        marginVertical: 10,
+        height: 115,
+        borderRadius: 12,
+        marginVertical: 5 ,
         flexDirection: 'row',
         backgroundColor: '#fff'
     },

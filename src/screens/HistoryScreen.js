@@ -93,14 +93,12 @@ const HistoryScreen = ({ navigation }) => {
                     <Text style={styles.titleHeader_text}>Lịch sử</Text>
                 </View>
                 
-                <TouchableOpacity
-                    onPress={() => navigation.navigate("Message")}
-                >
+         
                     <View style={styles.RealtimeChatHeader}>
                         <AntDesign name="message1" size={22} color="#6495ED" />
                         <Text style={styles.RealtimeChatHeader_text}>9</Text>
                     </View>
-                </TouchableOpacity>
+          
             </View>  
                 
             <View style={styles.body}> 
@@ -157,6 +155,7 @@ const styles = StyleSheet.create({
 
     RealtimeChatHeader: {
         padding: 10,
+        opacity: 0
     },
     
     RealtimeChatHeader_text: {

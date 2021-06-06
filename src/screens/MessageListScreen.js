@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
     StyleSheet,
@@ -75,7 +76,7 @@ const MessageListScreen = ({navigation}) => {
           onPress={() => navigation.navigate('Message', {
             studentData: { name: data.studentData },
             parentsData: data.parentsData,
-            teacherData: user.data
+            // teacherData: user.data
           })}
         >
           <View style={styles.each_message_space}>

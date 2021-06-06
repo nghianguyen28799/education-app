@@ -37,7 +37,8 @@ import { FontAwesome } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
 import { database } from '../assets/host/firebase'
 // close icon
-const GOOGLE_MAPS_APIKEY = 'AIzaSyBHRMxpBKc25CMHY51h1jrnCCm6PjNs62s';
+const GOOGLE_MAPS_APIKEY = '';
+// const GOOGLE_MAPS_APIKEY = 'AIzaSyBLnQ6KLSCfkgMFDgbw1_jMzlo4fhXILss';
 
 const GpsFollowScreen = ({ navigation }) => {
     const user = useSelector(state => state.userReducer.data)
@@ -87,17 +88,18 @@ const GpsFollowScreen = ({ navigation }) => {
         const { data } = getInfo;
         if(data) {
             var currentDate;
-            data.listBookStation.map(item => {
-                if(new Date().getDate() === (new Date(item.date)).getDate()) {
-                    currentDate = item
-                } 
-            })
+            const now = new Date().getDate()+new Date().getMonth();
+            const getDate = (new Date(getInfo.data.date)).getDate()+(new Date(getInfo.data.date)).getMonth();
+            if(now == getDate) {
+                currentDate = data
+            }
             
             if(currentDate) {
+                console.log('12312');
                 var check = false;
                 await database.collection('location').onSnapshot(query => {
                     query.forEach(async (doc) => {
-                        if(doc.data().locationById.id === currentDate.supervisorId) {
+                        if(doc.data().locationById.id === currentDate.supervisorIdTemp) {
                             setStatus(1)
                             check = true;
                           
@@ -110,7 +112,7 @@ const GpsFollowScreen = ({ navigation }) => {
                         }
 
                         // start update destination
-                            await database.collection("destination").where('id', '==',currentDate.supervisorId)
+                            await database.collection("destination").where('id', '==',currentDate.supervisorIdTemp)
                             .get()
                             .then((querySnapshot) => {
                                 querySnapshot.forEach(async (doc) => {
@@ -157,13 +159,13 @@ const GpsFollowScreen = ({ navigation }) => {
         const getInfo = await axios.post(`${host}/registerbus/show`, { id: user._id })    
         if(getInfo.data){
             var currentDate;
-            await getInfo.data.listBookStation.map(item => {
-                if(new Date().getDate() === (new Date(item.date)).getDate()) {
-                    currentDate = item
-                } 
-            })
+            const now = new Date().getDate()+new Date().getMonth();
+            const getDate = (new Date(getInfo.data.date)).getDate()+(new Date(getInfo.data.date)).getMonth();
+            if(now == getDate) {
+                currentDate = getInfo.data
+            }
         
-            await database.collection("destination").where('id', '==',currentDate.supervisorId)
+            await database.collection("destination").where('id', '==', currentDate ? currentDate.supervisorIdTemp : "")
             .get()
             .then((querySnapshot) => {
                 querySnapshot.forEach(async (doc) => {
@@ -217,7 +219,10 @@ const GpsFollowScreen = ({ navigation }) => {
                 </View>  
                     
                 <View style={styles.body}> 
-                    <MapView initialRegion={mapRegion} style={styles.mapView}>
+                    <MapView 
+                        initialRegion={mapRegion} 
+                        style={styles.mapView}
+                    >
                         {
                             mapRegion
                             ?
@@ -227,7 +232,7 @@ const GpsFollowScreen = ({ navigation }) => {
                                     title="Xe Bus" description="Vị trí hiện tại">
                                     <Image source={BusStopIcon} style={{ width: 32, height: 32 }} />
                                 </Marker>
-                                {
+                                {/* {
                                     <MapViewDirections
                                         origin={mapRegion}
                                         destination={Object.entries(destination).length !== 0 ? destination.gps : null}
@@ -236,7 +241,7 @@ const GpsFollowScreen = ({ navigation }) => {
                                         strokeColor="red"
                                         optimizeWaypoints={true}
                                     />
-                                }
+                                } */}
                             </>
                             
                             : null

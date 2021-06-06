@@ -21,6 +21,7 @@ import host from '../assets/host';
 // icon store 
 import { FontAwesome5 } from '@expo/vector-icons'; 
 import { AntDesign } from '@expo/vector-icons'; 
+import { Entypo } from '@expo/vector-icons';
 
 import { LinearGradient } from 'expo-linear-gradient';
 import MaleNoneAvatar from '../assets/images/male-none-avatar.png' 
@@ -59,11 +60,11 @@ const ListStudentScreen = ({ navigation }) => {
     const addDataSelected = (item) => {
         setDateSelected(dateSelected => [...dateSelected, item.date.getDate()+"/"+item.date.getMonth()])
         var lessons = [];
-        for(let i=0 ; i<9 ; i++) {
+        for(let i=0 ; i<8 ; i++) {
             lessons.push({
                 date: new Date(item.date),
                 lesson: i+1,
-                status: false
+                status: true
             })
         }
         setAbsenceSelected(absenceSelected => [...absenceSelected, 
@@ -92,7 +93,7 @@ const ListStudentScreen = ({ navigation }) => {
         ?
         <View style={[styles.each_date, {borderColor: '#B3B6B7'}]}>
             <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#B3B6B7' }}>
-                { item.date.getDate() + '-' + item.date.getMonth() }    
+                { item.date.getDate() + '/' + item.date.getMonth() }    
             </Text>
             <Text style={{ fontSize: 12, color: '#B3B6B7' }}>
                 {
@@ -112,7 +113,7 @@ const ListStudentScreen = ({ navigation }) => {
             >
                 <View style={[styles.each_date]}>
                     <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#000' }}>
-                        { item.date.getDate() + '-' + (Number(item.date.getMonth())+1) }    
+                        { item.date.getDate() + '/' + (Number(item.date.getMonth())+1) }    
                     </Text>
                     <Text style={{ fontSize: 12, color: '#000' }}>
                         {
@@ -139,7 +140,7 @@ const ListStudentScreen = ({ navigation }) => {
         >
             <View style={[styles.each_date, { backgroundColor: '#2980B9'}]}>
                 <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#fff' }}>
-                    { item.date.getDate() + '-' + (Number(item.date.getMonth())+1) }    
+                    { item.date.getDate() + '/' + (Number(item.date.getMonth())+1) }    
                 </Text>
                 <Text style={{ fontSize: 12, color: '#fff' }}>
                     {
@@ -191,12 +192,12 @@ const ListStudentScreen = ({ navigation }) => {
             {
                 item.status
                 ?
-                <View style={[styles.lesson_border, {backgroundColor: '#2980B9'}]}>
-                    <Text style={{ color: "#fff" }}>Tiết { item.lesson }</Text>
+                <View style={styles.lesson_border}>
+                    <Entypo name="check" size={18} color="green" />
                 </View>
                 :
                 <View style={styles.lesson_border}>
-                    <Text>Tiết { item.lesson }</Text>
+                    
                 </View>
             }            
         </TouchableOpacity>
@@ -205,21 +206,21 @@ const ListStudentScreen = ({ navigation }) => {
     const renderChooseReason = ({ item  }) => (
         // <View >
             <View style={styles.get_lesson_on_row}>
-                <Text style={{ marginRight: 15 }}>
+                <Text style={{ width: 80 }}>
                     {
                         item.date.getDay() === 1
-                        ? "Thứ 2"
+                        ? "Thứ 2, "
                         : item.date.getDay() === 2
-                        ? "Thứ 3"
+                        ? "Thứ 3, "
                         : item.date.getDay() === 3
-                        ? "Thứ 4"
+                        ? "Thứ 4, "
                         : item.date.getDay() === 4
-                        ? "Thứ 5"
+                        ? "Thứ 5, "
                         : item.date.getDay() === 5
-                        ? "Thứ 6"
+                        ? "Thứ 6, "
                         : null
                     }
-                    {" " + item.date.getDate()}-{(Number(item.date.getMonth())+1)}:
+                    {" " + item.date.getDate()}/{(Number(item.date.getMonth())+1)}:
                 </Text>
                 <View style={styles.select_lesson_border}>
                     {
@@ -281,14 +282,12 @@ const ListStudentScreen = ({ navigation }) => {
                     <Text style={styles.titleHeader_text}>Xin vắng</Text>
                 </View>
                 
-                <TouchableOpacity
-                    onPress={() => navigation.navigate("Message")}
-                >
+              
                     <View style={styles.RealtimeChatHeader}>
                         <AntDesign name="message1" size={22} color="#6495ED" />
                         <Text style={styles.RealtimeChatHeader_text}>9</Text>
                     </View>
-                </TouchableOpacity>
+              
             </View>  
 
             <View style={styles.body}>
@@ -310,7 +309,31 @@ const ListStudentScreen = ({ navigation }) => {
                     } 
                 </View>
                 <View style={styles.title_content}>
-                    <Text style={styles.title_content_name}>Tiết vắng</Text>
+                    <Text style={{ fontSize: 18, fontWeight: 'bold', width: 80 }}>Tiết vắng</Text>
+                    <View style={{ width: 27, height: 27, justifyContent: 'center', alignItems: 'center'}}>
+                        <Text>1</Text>
+                    </View>
+                    <View style={{ width: 27, height: 27, justifyContent: 'center', alignItems: 'center'}}>
+                        <Text>2</Text>
+                    </View>
+                    <View style={{ width: 27, height: 27, justifyContent: 'center', alignItems: 'center'}}>
+                        <Text>3</Text>
+                    </View>
+                    <View style={{ width: 27, height: 27, justifyContent: 'center', alignItems: 'center'}}>
+                        <Text>4</Text>
+                    </View>
+                    <View style={{ width: 27, height: 27, justifyContent: 'center', alignItems: 'center'}}>
+                        <Text>5</Text>
+                    </View>
+                    <View style={{ width: 27, height: 27, justifyContent: 'center', alignItems: 'center'}}>
+                        <Text>6</Text>
+                    </View>
+                    <View style={{ width: 27, height: 27, justifyContent: 'center', alignItems: 'center'}}>
+                        <Text>7</Text>
+                    </View>
+                    <View style={{ width: 27, height: 27, justifyContent: 'center', alignItems: 'center'}}>
+                        <Text>8</Text>
+                    </View>
                 </View>
 
                 <View style={styles.select_lesson_border}>
@@ -404,7 +427,7 @@ const styles = StyleSheet.create({
     RealtimeChatHeader: {
         flexDirection: 'row',
         padding: 10,
-        // opacity: 0
+        opacity: 0
     },
 
     RealtimeChatHeader_text: {
@@ -431,14 +454,17 @@ const styles = StyleSheet.create({
     title_content: {
         // flex: 1,
         // borderWidth: 1,
+        flexDirection: 'row',
         marginVertical: 10,
-        alignItems: 'flex-start'
+        alignItems: 'flex-start',
+        alignItems: 'center',
     },
 
     title_content_name: {
         fontSize: 18,
         fontWeight: 'bold',
         // borderBottomWidth: 1,
+        width: 100,
     },
 
     get_date_content: {
@@ -461,7 +487,8 @@ const styles = StyleSheet.create({
         flex: 1,
         // flexDirection: 'row',
         // marginVertical: 10,
-        // alignItems: 'center'
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 
     get_lesson_on_row: {
@@ -479,13 +506,12 @@ const styles = StyleSheet.create({
     },
 
     lesson_border: {
-        width: 70, 
-        height: 30, 
-        borderWidth: 1,
-        marginHorizontal: 3,
+        width: 25, 
+        height: 25, 
+        borderWidth: 1, 
+        marginHorizontal: 1,
         justifyContent: 'center',
-        alignItems: 'center',
-        borderRadius: 5
+        alignItems: 'center'
     },
 
     absence_reason_border: {

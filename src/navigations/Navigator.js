@@ -38,6 +38,7 @@ import AttendanceForTeacherScreen from '../screens/AttendanceForTeacherScreen';
 import NotificationParentsScreen from '../screens/NotificationParentsScreen';
 import ReasonAbsenceScreen from '../screens/ReasonAbsence';
 import MapScreen from '../screens/MapScreen';
+import ViewProfileSupervisorScreen from '../screens/ViewProfileSupervisorScreen';
 
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -229,6 +230,7 @@ export default function StackNavigator () {
             <Stack.Screen name="AttendanceForTeacher" component={AttendanceForTeacherScreen} options={ navOptionHandle } />
             <Stack.Screen name="ReasonAbsence" component={ReasonAbsenceScreen} options={ navOptionHandle }/>
             <Stack.Screen name="Map" component={MapScreen} options={ navOptionHandle }/>
+            <Stack.Screen name="ViewProfileSupervisor" component={ViewProfileSupervisorScreen} options={ navOptionHandle }/>
         </Stack.Navigator>
     </NavigationContainer>
   )
