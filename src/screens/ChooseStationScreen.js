@@ -191,7 +191,7 @@ const ChooseStation = ({ navigation }) => {
         }
     }
 
-    const minDate = new Date(new Date().setDate(new Date().getDate() + 1)) // nextDay
+    const minDate = new Date(new Date().setDate(new Date().getDate())) // nextDay
     const maxDate = new Date(new Date().setDate(new Date().getDate() + 90))
     const startDate  =  selectedStartDate ? selectedStartDate.toString() : '';
     const endDate = selectedEndDate ? selectedEndDate.toString() : '';
@@ -262,7 +262,7 @@ const ChooseStation = ({ navigation }) => {
                 </TouchableOpacity>
                 
                 <View style={styles.titleHeader}>
-                    <Text style={styles.titleHeader_text}>Đăng ký bến</Text>
+                    <Text style={styles.titleHeader_text}>Chọn lịch</Text>
                 </View>
                 
                 <TouchableOpacity>

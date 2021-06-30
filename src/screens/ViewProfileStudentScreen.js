@@ -28,6 +28,7 @@ import MaleNoneAvatar from '../assets/images/male-none-avatar.png'
 import FemaleNoneAvatar from '../assets/images/female-none-avatar.png' 
 import { Entypo } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
+
 // close icon
 const window = Dimensions.get("window");
 const screen = Dimensions.get("screen");
@@ -39,7 +40,6 @@ const ViewProfileStudentScreen = ({ navigation, route }) => {
     }
     const user = useSelector(state => state.userReducer.data);
 
-
     const { studentData } = route.params
     const [textTitle, setTextTitle] = React.useState('');
     const [textContent, setTextContent] = React.useState('');
@@ -49,7 +49,8 @@ const ViewProfileStudentScreen = ({ navigation, route }) => {
     const [isModalVisible, setModalVisible] = React.useState(false);
     const [isModalViewRating, setModalViewRating] = React.useState(false);
     const [ratingData, setRatingData] = React.useState([]);
-
+    const [busInfo, setBusInfo] = React.useState([]);
+    
     const getData = async () => {
         try{
             const isTeacher = await axios.post(`${host}/teacher/getUserById`, {id: studentData.teacherCode})
@@ -58,6 +59,16 @@ const ViewProfileStudentScreen = ({ navigation, route }) => {
             setTeacherData(isTeacher.data)  
             setClassData(isClass.data[0])
             setParentsData(isParents.data[0])
+            const isRegister = await axios.post(`${host}/registerbus/show`, { id: isParents.data[0]._id})
+            if(Object.entries(isRegister.data).length > 0) {
+                const isSupervisor = await axios.post(`${host}/teacher/getUserById`, {id: isRegister.data.supervisorIdTemp})
+                const bsxData = await axios.post(`${host}/bus/getDataById`, {id: isRegister.data.supervisorIdTemp})
+                setBusInfo({
+                    bsx: bsxData.data.licensePlate,
+                    name: isSupervisor.data.FullName,
+                    phone: isSupervisor.data.NumberPhone,
+                })
+            }
         } catch(error) {
             console.log(error);
         }
@@ -568,7 +579,70 @@ const ViewProfileStudentScreen = ({ navigation, route }) => {
                                 </Text>
                             </View>
                         </View>
-                    </View>     
+                    </View>    
+
+                    <View style={{ height: 20 }}/>
+
+                    <View style={styles.contentProfile_parents}>
+                        <View style={styles.contentProfile_parents_header}>
+                            <LinearGradient 
+                                start={{ x: 0, y: 0.5 }}
+                                end={{ x: 1, y: 0.5 }}
+                                locations={[0, 0]}
+                                colors={['#f1c1bfed', '#69dfe3']}
+                                style={{
+                                    flex: 1,
+                                    borderTopLeftRadius: 20,
+                                    borderTopRightRadius: 20,
+                                    paddingHorizontal: 20,
+                                    justifyContent: 'center'
+                                }}>
+                                <Text style={{
+                                    fontSize: 16,
+                                    fontWeight: 'bold',
+                                    color: '#2980B9'
+                                 }}>
+                                    Thông tin xe đã đăng ký.
+                                </Text>
+                            </LinearGradient>
+                        </View>
+                        <View style={styles.contentProfile_parents_body}>
+                            
+                            <View style={styles.contentProfile_textfield}>
+                                <Text style={styles.contentProfile_textfield_title}>Biển số xe: </Text>
+                                <Text style={styles.contentProfile_textfield_content}> 
+                                    {
+                                        busInfo.bsx
+                                        ? busInfo.bsx
+                                        : null
+                                    }
+                                </Text>
+                            </View>
+
+                            <View style={styles.contentProfile_textfield}>
+                                <Text style={styles.contentProfile_textfield_title}>Tên người phụ trách: </Text>
+                                <Text style={styles.contentProfile_textfield_content}> 
+                                    {
+                                        busInfo.name
+                                        ? busInfo.name
+                                        : null
+                                    }
+                                </Text>
+                            </View>
+
+                            <View style={styles.contentProfile_textfield}>
+                                <Text style={styles.contentProfile_textfield_title}>Sđt người phụ trách: </Text>
+                                <Text style={styles.contentProfile_textfield_content}> 
+                                    {
+                                        busInfo.phone
+                                        ? busInfo.phone
+                                        : null
+                                    }
+                                </Text>
+                            </View>
+
+                        </View>
+                    </View> 
                 </View>
             </View>
         </ScrollView>

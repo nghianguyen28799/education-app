@@ -274,7 +274,7 @@ const TeacherHomePage = ({ navigation, route }) => {
                                 !item.data.getOnBusFromHouse
                                 ? <Text style={{ fontSize: 12, alignItems: 'center'}}>Không đi xe trường</Text>
                                 : item.data.getOnBusFromHouse && !item.data.getOutBusFromHouse && new Date().getDate() == (new Date(item.data.date)).getDate()
-                                ? <Text style={{ fontSize: 12, alignItems: 'center', color: "green",  fontWeight: 'bold'}}>Đã lên xe</Text>
+                                ? <Text style={{ fontSize: 12, alignItems: 'center', color: "red",  fontWeight: 'bold'}}>Chưa xuống xe</Text>
                                 : item.data.getOutBusFromHouse && new Date().getDate() == (new Date(item.data.date)).getDate()
                                 ? <Text style={{ fontSize: 12, alignItems: 'center', color: "green", fontWeight: 'bold'}}>Đã xuống xe</Text>
                                 : <Text style={{ fontSize: 12, alignItems: 'center'}}>Không đi xe trường</Text>

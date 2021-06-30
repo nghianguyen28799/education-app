@@ -62,29 +62,34 @@ const NotificationParentsScreen = ({navigation}) => {
         fetchData()
     },[])
 
+
     const confirmButton = async (item, text) => {
-        await axios.post(`${host}/notification/editConfirm`, {id: item._id, text: text });
+        await axios.post(`${host}/notification/editConfirm`, {id: item._id, text: text })
+        .then(() => {
+            fetchData();
+        })
         const registerData = await axios.post(`${host}/registerBus/show`, {id: user.data._id });
         const supervisorId = registerData.data.supervisorIdTemp;
         const teacherData = await axios.post(`${host}/teacher/getUserById`, {id: supervisorId });
         const studentData = await axios.post(`${host}/student/getStudentByParentsId`, {id: user.data._id});
         const room = supervisorId+"_"+user.data._id;
-        await axios.post(`${host}/chat/checkRoom`, { room });
+        // await axios.post(`${host}/chat/checkRoom`, { room });
+        await teacherData.data.tokens.map(item => {
+            sendPushNotification(item.tokenDevices, studentData.data.name, text)
+        })
         const message = {
             text: `Phản hồi: ${text} người đón hộ `,
             user: {
                 _id: user.data._id,
                 name: 'Parent',
-                avatar: user.data.avatar,
+                avatar: user.data.Avatar,
             },
             _id: Math.random().toString(36),
             createdAt: new Date(),
         }
         await axios.post(`${host}/chat/addMessage`, { room, message });
-        teacherData.data.tokens.map(item => {
-            sendPushNotification(item.tokenDevices, studentData.data.name, text)
-        })
-        fetchData();
+       
+        
     }
 
     async function sendPushNotification(expoPushToken, name, text) {

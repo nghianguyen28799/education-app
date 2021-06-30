@@ -120,7 +120,6 @@ export default function ScanScreen({ navigation, route }) {
       dispatch(addInfo(studentInfo))
     })
   }
-  
   const alertQR = async (name) => {
     const type = route.params.type === "OnBus" ? 1 : 0;
     const destination = scheduleInfo.process.destination === 1 ? "Nhà đến trường" : "Trường về nhà";
@@ -161,7 +160,8 @@ export default function ScanScreen({ navigation, route }) {
         const changeInfo = await axios.post(`${host}/teacher/handlePicture`, formData, config)
         const { data, error } = changeInfo;
         if(!error) {
-          setPictureOther(data.uri)
+          // console.log(data.uri);
+          setPictureOther(data.uri);
         } else {
             console.log(error);
         }
@@ -256,12 +256,12 @@ export default function ScanScreen({ navigation, route }) {
                         <View style={{ width: '30%', height: 120, borderWidth: 1, }}>
                             {
                               pictureOther
-                              ? <Image source={{ uri: `${host}/${pictureOther}` }} style={{ width: '30%', height: 120 }}/>
+                              ? <Image source={{ uri: `${host}/${pictureOther}` }} style={{ width: '100%', height: 120 }}/>
                               :parentsData
                               ?
                                 parentsData.avatar
                                 ?
-                                <Image source={{ uri: `${host}/${parentsData.avatar}` }} style={{ width: '30%', height: 120 }}/>
+                                <Image source={{ uri: `${host}/${parentsData.avatar}` }} style={{ width: '100%', height: 120 }}/>
                                 : null
                               :null
                             }
@@ -354,9 +354,11 @@ export default function ScanScreen({ navigation, route }) {
                          {id: parentsData._id, type: route.params.type, supervisorId: route.params.supervisorId}
                         ).then(() => {
                           loadStudentList()
-                          openScan()
                           alertQR(studentData.name)
                           setPictureOther("");
+                          openScan();
+                          setModalVisible(false);
+                          console.log("OKOKOK");
                         })
                       }
                       }
@@ -428,20 +430,33 @@ export default function ScanScreen({ navigation, route }) {
     var dom1 = data.slice(data.indexOf("/")+2, data.length)
     var dom2 = dom1.slice(dom1.indexOf("/")+1, dom1.length)
     const isStudent = await axios.get(`${host}/${dom2}`)
-    const isParents = await axios.post(`${host}/users/getUserById`, { id: isStudent.data.student.parentsCode })
-    const isClass = await axios.post(`${host}/class/getClassById`, { id: isStudent.data.student.classCode })
-    const isTeacher = await axios.post(`${host}/teacher/getUserById`, { id: isStudent.data.student.teacherCode })
-    const registerData = await axios.post(`${host}/registerBus/show`, { id: isStudent.data.student.parentsCode })
-    setStudentData(isStudent.data.student)
-    setTokens(isStudent.data.tokens)
-    setParentsData(isParents.data[0])
-    setTeacherData(isTeacher.data)
-    setClassData(isClass.data[0])
-    setModalVisible(!isModalVisible);
-    const now = new Date().getDate()+"/"+new Date().getMonth();
-    const getDate = (new Date(registerData.data.otherRequirement)).getDate()+"/"+(new Date(registerData.data.otherRequirement)).getMonth();
-    if(now == getDate) {
-      setOtherRequire(true)
+    const check = infoStudentList.filter(item => {
+      return item.data.student._id == isStudent.data.student._id
+    })
+    if(check.length == 0) {
+      Alert.alert(
+        "Thất bại",
+        `Học sinh này không có trong danh sách`,
+        [
+          { text: "OK", onPress: () => setScanned(false) }
+        ]
+      );
+    } else {
+      const isParents = await axios.post(`${host}/users/getUserById`, { id: isStudent.data.student.parentsCode })
+      const isClass = await axios.post(`${host}/class/getClassById`, { id: isStudent.data.student.classCode })
+      const isTeacher = await axios.post(`${host}/teacher/getUserById`, { id: isStudent.data.student.teacherCode })
+      const registerData = await axios.post(`${host}/registerBus/show`, { id: isStudent.data.student.parentsCode })
+      setStudentData(isStudent.data.student)
+      setTokens(isStudent.data.tokens)
+      setParentsData(isParents.data[0])
+      setTeacherData(isTeacher.data)
+      setClassData(isClass.data[0])
+      setModalVisible(!isModalVisible);
+      const now = new Date().getDate()+"/"+new Date().getMonth();
+      const getDate = (new Date(registerData.data.otherRequirement)).getDate()+"/"+(new Date(registerData.data.otherRequirement)).getMonth();
+      if(now == getDate) {
+        setOtherRequire(true)
+      }
     }
   };
 

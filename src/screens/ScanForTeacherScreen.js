@@ -72,10 +72,30 @@ export default function ScanScreen({ navigation, route }) {
   }
 
   const loadStudentList = async (classCode) => {
-    dispatch(initialStudent());
     const isStudentList = await axios.post(`${host}/student/getStudentByClassCode`, { classCode })
-    isStudentList.data.map(item => {
-      dispatch(addStudent(item))
+    isStudentList.data.map(async(item) => {
+      const isParents = await axios.post(`${host}/users/getUserById`, { id: item.parentsCode })
+      const parentsId = isParents.data[0]._id;
+      const isRegister = await axios.post(`${host}/registerbus/show`, { id: parentsId })
+      if(Object.entries(isRegister.data).length > 0) {
+        const info = {
+          ...item,
+          bus: true,
+          date: isRegister.data.date,
+          getOnBusFromHouse: isRegister.data.getOnBusFromHouse,
+          getOutBusFromHouse: isRegister.data.getOutBusFromHouse,
+          getOnBusFromSchool: isRegister.data.getOnBusFromSchool,
+          getOutBusFromSchool: isRegister.data.getOutBusFromSchool,
+        } 
+        // console.log(info);
+        dispatch(addStudent(info))    
+      } else {
+        const info = {
+          ...item,
+          bus: false,
+        } 
+        dispatch(addStudent(info))    
+      }
     })
   }
   

@@ -376,6 +376,10 @@ const AttendenceComponent = ({ navigation }) => {
                             </View>
                             <View style={{ flex: 1/3, alignItems: 'center' }}>
                                 <Text style={{ textAlign: 'center', color: '#229954', fontSize: 12, fontWeight: 'bold' }}>{item.data.student.name}</Text>
+                                {
+                                    !item.data.station.getOnBusFromHouse
+                                    &&  <Text style={{ textAlign: 'center', color: 'red', fontSize: 12 }}>Vắng</Text> 
+                                }
                             </View>
                         </View>
                     </TouchableOpacity>
@@ -408,6 +412,10 @@ const AttendenceComponent = ({ navigation }) => {
                             </View>
                             <View style={{ flex: 1/3, alignItems: 'center' }}>
                                 <Text style={{ textAlign: 'center', color: '#717D7E', fontSize: 12, fontWeight: 'bold' }}>{item.data.student.name}</Text>
+                                {
+                                    !item.data.station.getOnBusFromHouse
+                                    &&  <Text style={{ textAlign: 'center', color: 'red', fontSize: 12 }}>Vắng</Text> 
+                                }
                             </View>
                         </View>
                     </TouchableOpacity>
@@ -456,6 +464,10 @@ const AttendenceComponent = ({ navigation }) => {
                             </View>
                             <View style={{ flex: 1/3, alignItems: 'center' }}>
                                 <Text style={{ textAlign: 'center', color: '#229954', fontSize: 12, fontWeight: 'bold' }}>{item.data.student.name}</Text>
+                                {
+                                    !item.data.station.getOnBusFromSchool
+                                    &&  <Text style={{ textAlign: 'center', color: 'red', fontSize: 12 }}>Vắng</Text> 
+                                }
                             </View>
                         </View>
                     </TouchableOpacity>
@@ -488,6 +500,10 @@ const AttendenceComponent = ({ navigation }) => {
                             </View>
                             <View style={{ flex: 1/3, alignItems: 'center' }}>
                                 <Text style={{ textAlign: 'center', color: '#717D7E', fontSize: 12, fontWeight: 'bold' }}>{item.data.student.name}</Text>
+                                {
+                                    !item.data.station.getOnBusFromSchool
+                                    &&  <Text style={{ textAlign: 'center', color: 'red', fontSize: 12 }}>Vắng</Text> 
+                                }
                             </View>
                         </View>
                     </TouchableOpacity>
